@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 대시보드</title>
+    <link href="../static/lib/bootstrap-5.3.6-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../static/lib/bootstrap-icons-1.13.1/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="../static/css/admin/dashboard.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-shield-check"></i> AI Admin System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-page="dashboard">
+                            <i class="bi bi-speedometer2"></i> 대시보드
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="users">
+                            <i class="bi bi-people"></i> 사용자 관리
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="roles">
+                            <i class="bi bi-person-badge"></i> 역할 관리
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="menus">
+                            <i class="bi bi-list"></i> 메뉴 관리
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> 관리자
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">로그아웃</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="container-fluid mt-4">
+        <!-- 대시보드 페이지 -->
+        <div id="dashboard-page" class="page-content">
+            <div class="row">
+                <div class="col-12">
+                    <h2><i class="bi bi-speedometer2"></i> 대시보드</h2>
+                    <hr>
+                </div>
+            </div>
+            
+            <!-- 통계 카드 -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 id="totalUsers">0</h4>
+                                    <p class="mb-0">전체 사용자</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-people fs-1"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 id="enabledUsers">0</h4>
+                                    <p class="mb-0">활성 사용자</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-person-check fs-1"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 id="totalRoles">0</h4>
+                                    <p class="mb-0">전체 역할</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-person-badge fs-1"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 id="totalMenus">0</h4>
+                                    <p class="mb-0">전체 메뉴</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-list fs-1"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 최근 활동 -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-clock-history"></i> 최근 사용자 활동</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentUsers" class="list-group list-group-flush">
+                                <!-- 동적으로 생성됨 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-graph-up"></i> 시스템 상태</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h4 class="text-success">정상</h4>
+                                        <p>데이터베이스</p>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h4 class="text-success">정상</h4>
+                                        <p>API 서버</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사용자 관리 페이지 -->
+        <div id="users-page" class="page-content" style="display: none;">
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2><i class="bi bi-people"></i> 사용자 관리</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userModal">
+                            <i class="bi bi-plus"></i> 새 사용자
+                        </button>
+                    </div>
+                    <hr>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="usersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>이름</th>
+                                            <th>사용자명</th>
+                                            <th>이메일</th>
+                                            <th>역할</th>
+                                            <th>상태</th>
+                                            <th>생성일</th>
+                                            <th>작업</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 동적으로 생성됨 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 역할 관리 페이지 -->
+        <div id="roles-page" class="page-content" style="display: none;">
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2><i class="bi bi-person-badge"></i> 역할 관리</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#roleModal">
+                            <i class="bi bi-plus"></i> 새 역할
+                        </button>
+                    </div>
+                    <hr>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="rolesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>역할명</th>
+                                            <th>설명</th>
+                                            <th>상태</th>
+                                            <th>생성일</th>
+                                            <th>작업</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 동적으로 생성됨 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메뉴 관리 페이지 -->
+        <div id="menus-page" class="page-content" style="display: none;">
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2><i class="bi bi-list"></i> 메뉴 관리</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#menuModal">
+                            <i class="bi bi-plus"></i> 새 메뉴
+                        </button>
+                    </div>
+                    <hr>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="menusTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>메뉴명</th>
+                                            <th>URL</th>
+                                            <th>아이콘</th>
+                                            <th>정렬</th>
+                                            <th>상태</th>
+                                            <th>작업</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 동적으로 생성됨 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 사용자 모달 -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalTitle">새 사용자</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="userId">
+                        <div class="mb-3">
+                            <label for="userName" class="form-label">이름</label>
+                            <input type="text" class="form-control" id="userName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userUsername" class="form-label">사용자명</label>
+                            <input type="text" class="form-control" id="userUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userEmail" class="form-label">이메일</label>
+                            <input type="email" class="form-control" id="userEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userRole" class="form-label">역할</label>
+                            <select class="form-select" id="userRole" required>
+                                <!-- 동적으로 생성됨 -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="userEnabled" checked>
+                                <label class="form-check-label" for="userEnabled">
+                                    활성화
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveUserBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 역할 모달 -->
+    <div class="modal fade" id="roleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="roleModalTitle">새 역할</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="roleForm">
+                        <input type="hidden" id="roleId">
+                        <div class="mb-3">
+                            <label for="roleName" class="form-label">역할명</label>
+                            <input type="text" class="form-control" id="roleName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="roleDescription" class="form-label">설명</label>
+                            <textarea class="form-control" id="roleDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="roleEnabled" checked>
+                                <label class="form-check-label" for="roleEnabled">
+                                    활성화
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveRoleBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메뉴 모달 -->
+    <div class="modal fade" id="menuModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="menuModalTitle">새 메뉴</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="menuForm">
+                        <input type="hidden" id="menuId">
+                        <div class="mb-3">
+                            <label for="menuName" class="form-label">메뉴명</label>
+                            <input type="text" class="form-control" id="menuName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="menuUrl" class="form-label">URL</label>
+                            <input type="text" class="form-control" id="menuUrl">
+                        </div>
+                        <div class="mb-3">
+                            <label for="menuIcon" class="form-label">아이콘</label>
+                            <input type="text" class="form-control" id="menuIcon" placeholder="bi bi-house">
+                        </div>
+                        <div class="mb-3">
+                            <label for="menuSortOrder" class="form-label">정렬 순서</label>
+                            <input type="number" class="form-control" id="menuSortOrder" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="menuEnabled" checked>
+                                <label class="form-check-label" for="menuEnabled">
+                                    활성화
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveMenuBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/lib/bootstrap-5.3.6-dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../static/js/admin/dashboard.js"></script>
+</body>
+</html> 

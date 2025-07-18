@@ -1,5 +1,9 @@
 package smart.ai.admin.config;
 
+// TODO: V2 개발 완료 후 기존 Worker 설정 복원 필요
+// 기존 외부 Worker 설정 클래스 - V2 개발 중 임시 주석 처리
+
+/*
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -33,3 +37,4 @@ public class WorkerConfig {
         return builder.baseUrl(authServerUrl).defaultHeader("Accept", "application/json").build();
     }
 }
+*/

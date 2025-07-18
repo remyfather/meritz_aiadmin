@@ -1,0 +1,96 @@
+package smart.ai.admin.service.auth;
+
+import java.time.Duration;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ServerWebExchange;
+
+import reactor.core.publisher.Mono;
+import smart.ai.admin.service.common.CommandService;
+import smart.ai.admin.util.JwtUtil;
+
+// TODO: V2 개발 완료 후 기존 외부 인증 서비스 복원 필요
+// 기존 외부 인증 서비스 - V2 개발 중 임시 주석 처리
+/*
+@Service
+public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+    @Autowired
+    CommandService commandService;
+
+    @Autowired
+    JwtUtil jwtUtil;
+
+    @Value("${smart.ai.access-token.duration:60}")
+    private int accessDuration;
+
+    @Value("${smart.ai.refreh-token.duration:110}")
+    private int refreshDuration;
+*/
+
+    public Mono<ResponseEntity<Void>> loginService(ServerWebExchange exchange, String id, String pw) {
+        ServerHttpResponse response = exchange.getResponse();
+        return jwtUtil.issueJwt(id, pw).flatMap(result -> {
+            String accessToken = String.valueOf(result.get("accessToken"));
+            ResponseCookie accessTokenCookie = ResponseCookie.from("access", accessToken)
+                    .maxAge(Duration.ofMinutes(accessDuration)).path("/").httpOnly(true).build();
+            response.addCookie(accessTokenCookie);
+
+            String refreshToken = String.valueOf(result.get("refreshToken"));
+            ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh", refreshToken)
+                    .maxAge(Duration.ofMinutes(refreshDuration)).path("/").httpOnly(true).build();
+            response.addCookie(refreshTokenCookie);
+
+            return Mono.just(ResponseEntity.noContent().<Void>build());
+
+        }).onErrorResume(WebClientResponseException.class, e -> {
+            return Mono.just(ResponseEntity.status(e.getStatusCode()).<Void>build());
+        });
+    }
+
+    public Mono<ResponseEntity<Void>> logoutService(ServerWebExchange exchange) {
+        ServerHttpResponse response = exchange.getResponse();
+
+        ResponseCookie accessTokenCookie = ResponseCookie.from("access", "")
+                .maxAge(0).path("/").httpOnly(true).build();
+        response.addCookie(accessTokenCookie);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh", "")
+                .maxAge(0).path("/").httpOnly(true).build();
+        response.addCookie(refreshTokenCookie);
+
+        return Mono.just(ResponseEntity.noContent().<Void>build());
+    }
+
+    public Mono<ResponseEntity<Void>> refreshService(ServerWebExchange exchange) {
+        ServerHttpRequest request = exchange.getRequest();
+        ServerHttpResponse response = exchange.getResponse();
+        Optional<String> token = jwtUtil.getRefreshToken(request);
+        return jwtUtil.refreshJwt(token)
+                .flatMap(result -> {
+                    String accessToken = String.valueOf(result.get("accessToken"));
+                    ResponseCookie accessTokenCookie = ResponseCookie.from("access", accessToken)
+                            .maxAge(Duration.ofMinutes(accessDuration)).path("/").httpOnly(true).build();
+                    response.addCookie(accessTokenCookie);
+
+                    String refreshToken = String.valueOf(result.get("refreshToken"));
+                    ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh", refreshToken)
+                            .maxAge(Duration.ofMinutes(refreshDuration)).path("/").httpOnly(true).build();
+                    response.addCookie(refreshTokenCookie);
+
+                    return Mono.just(ResponseEntity.noContent().<Void>build());
+                });
+    }
+}
+*/

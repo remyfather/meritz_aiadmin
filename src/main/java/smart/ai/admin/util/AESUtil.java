@@ -1,5 +1,9 @@
 package smart.ai.admin.util;
 
+// TODO: V2 개발 완료 후 기존 AES 유틸리티 복원 필요
+// 기존 AES 암호화 유틸리티 - V2 개발 중 임시 주석 처리
+
+/*
 import java.util.Arrays;
 import java.util.Random;
 
@@ -79,3 +83,4 @@ public class AESUtil {
 	}	
 	
 }
+*/

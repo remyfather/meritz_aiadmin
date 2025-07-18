@@ -1,0 +1,477 @@
+package smart.ai.admin.service.monitor;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.sql.DataSource;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import reactor.core.Disposable;
+import reactor.core.publisher.Mono;
+import smart.ai.admin.repository.MssqlRepository;
+
+// TODO: V2 개발 완료 후 기존 외부 모니터링 서비스 복원 필요
+// 기존 외부 모니터링 서비스 - V2 개발 중 임시 주석 처리
+/*
+@Service
+public class MonitorService {
+
+    private final AtomicReference<Map<String, List<Map<String, Object>>>> cache = new AtomicReference<>();
+
+    private static final Logger log = LoggerFactory.getLogger(MonitorService.class);
+    private final DataSource dataSource;
+    private final MssqlRepository mssqlTableRepository;
+
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    private Disposable daemonSubscription;
+
+    private static final WebClient webClient = WebClient.create();
+
+    public MonitorService(
+        DataSource dataSource,
+        MssqlRepository mssqlTableRepository
+    ) {
+        this.dataSource = dataSource;
+        this.mssqlTableRepository = mssqlTableRepository;
+    }
+*/
+
+    public Mono<String> getPeakDate(String div, String unit, String aggType){
+
+        String unitKeyword = switch (unit) {
+            case "day" -> "DAY";
+            case "hour" -> "HOUR";
+            case "minute" -> "MINUTE";
+            case "second" -> "SECOND";
+            default -> throw new IllegalArgumentException("Invalid unit: " + unit);
+        };
+        
+        return mssqlTableRepository.findPeakCountDate(div, unitKeyword, aggType);
+    }
+
+    
+    public Mono<Boolean> retry(String pcsId, int hisSeq) {
+        return mssqlTableRepository.isLatestError(pcsId, hisSeq)  // Mono<Boolean> 그대로 받기
+            .flatMap(isOk -> {
+                if (!isOk) {
+                    System.out.println(">>> not latest error");
+                    return Mono.just(false);
+                }
+    
+                return mssqlTableRepository.insertRetryRow(pcsId, hisSeq)
+                    .thenReturn(true)
+                    .onErrorResume(e -> {
+                        System.out.println(">>> insert error: " + e.getMessage());
+                        return Mono.just(false);
+                    });
+            })
+            .onErrorResume(e -> {
+                System.out.println(">>> isLatestError error: " + e.getMessage());
+                return Mono.just(false);
+            });
+    }
+
+
+    public Mono<Map<String, List<Map<String, Object>>>> getGpuDailyChart() {
+        ZoneId zone = ZoneId.of("Asia/Seoul");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+        String start = LocalDate.now(zone).atStartOfDay().format(formatter);
+        String end = ZonedDateTime.now(zone).format(formatter);
+        return getGpuChart(start, end, "second");
+    }
+
+    public Mono<Map<String, List<Map<String, Object>>>> getGpuChart(String startYmdHms, String endYmdHms, String unit) {
+
+        String formatPattern = getDatetimeFormat(unit);
+        String startDatetime = formatToMssqlDatetime(startYmdHms);
+        String endDatetime = formatToMssqlDatetime(endYmdHms);
+
+        log.info("startDatetime"+startDatetime);
+        log.info("endDatetime"+endDatetime);
+        log.info("unit"+unit);
+        log.info("formatPattern"+formatPattern);
+
+        String unitKeyword = switch (unit) {
+            case "day" -> "DAY";
+            case "hour" -> "HOUR";
+            case "minute" -> "MINUTE";
+            case "second" -> "SECOND";
+            default -> throw new IllegalArgumentException("Invalid unit: " + unit);
+        };
+
+        LocalDateTime baseStart = LocalDateTime.parse(startDatetime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime roundedStart = switch (unit) {
+            case "day"    -> baseStart.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case "hour"   -> baseStart.withMinute(0).withSecond(0).withNano(0);
+            case "minute" -> baseStart.withSecond(0).withNano(0);
+            case "second" -> baseStart.withNano(0);
+            default       -> throw new IllegalArgumentException("invalid unit");
+        };        
+
+        Timestamp startT = Timestamp.valueOf(roundedStart);
+
+        LocalDateTime baseEnd = LocalDateTime.parse(endDatetime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime roundedEnd = switch (unit) {
+            case "day"    -> baseEnd.withHour(23).withMinute(59).withSecond(59).withNano(0);
+            case "hour"   -> baseEnd.withMinute(59).withSecond(59).withNano(0);
+            case "minute" -> baseEnd.withSecond(59).withNano(0);
+            case "second" -> baseEnd.withNano(999_999_999);
+            default       -> throw new IllegalArgumentException("invalid unit");
+        };
+
+        Timestamp endT = Timestamp.valueOf(roundedEnd);
+
+        // log.info("startT"+startT);
+        // log.info("endT"+endT);
+        // log.info("unitKeyword"+unitKeyword);
+        // log.info("formatPattern"+formatPattern);
+
+        // 프로메테우스
+        // Mono<List<Map<String, Object>>> gpuMono = mssqlTableRepository.findGpuSnapshotUsage("G", startT, endT, unitKeyword, formatPattern);
+
+        // nvidia-smi >> utilization percent
+        Mono<List<Map<String, Object>>> gpuUtilizationMono = mssqlTableRepository.findGpuUtilizationPercent("g", startT, endT, unitKeyword, formatPattern);
+
+        // nvidia-smi >> memory usage
+        Mono<List<Map<String, Object>>> gpuMemoryMono = mssqlTableRepository.findGpuMemoryUsage("m", startT, endT, unitKeyword, formatPattern);
+
+        // return Mono.zip(gpuUtilizationMono, gpuMemoryMono, gpuMono)
+        return Mono.zip(gpuUtilizationMono, gpuMemoryMono)
+                .map(tuple -> {
+                    Map<String, List<Map<String, Object>>> result = new HashMap<>();
+                    result.put("gpuUtil", tuple.getT1());
+                    result.put("gpuMem", tuple.getT2());
+                    // result.put("gpu", tuple.getT3());
+                    return result;
+                });
+    }
+
+    public Mono<Map<String, List<Map<String, Object>>>> getDailyChart() {
+        ZoneId zone = ZoneId.of("Asia/Seoul");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+        String start = LocalDate.now(zone).atStartOfDay().format(formatter);
+        String end = ZonedDateTime.now(zone).format(formatter);
+        return getAiSmryChart(start, end, "minute", "max"); // 임시
+        // return getAiSmryChart(start, end, unit, aggType);
+    }
+
+    public Mono<Map<String, List<Map<String, Object>>>> getAiSmryChart(String startYmdHms, String endYmdHms, String unit, String aggType) {
+
+        String formatPattern = getDatetimeFormat(unit);
+        String startDatetime = formatToMssqlDatetime(startYmdHms);
+        String endDatetime = formatToMssqlDatetime(endYmdHms);
+
+        log.info("startDatetime"+startDatetime);
+        log.info("endDatetime"+endDatetime);
+        log.info("unit"+unit);
+        log.info("formatPattern"+formatPattern);
+        log.info("aggType"+aggType);
+
+        String unitKeyword = switch (unit) {
+            case "day" -> "DAY";
+            case "hour" -> "HOUR";
+            case "minute" -> "MINUTE";
+            case "second" -> "SECOND";
+            default -> throw new IllegalArgumentException("Invalid unit: " + unit);
+        };
+
+        LocalDateTime baseStart = LocalDateTime.parse(startDatetime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime roundedStart = switch (unit) {
+            case "day"    -> baseStart.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case "hour"   -> baseStart.withMinute(0).withSecond(0).withNano(0);
+            case "minute" -> baseStart.withSecond(0).withNano(0);
+            case "second" -> baseStart.withNano(0);
+            default       -> throw new IllegalArgumentException("invalid unit");
+        };        
+
+        Timestamp startT = Timestamp.valueOf(roundedStart);
+
+        LocalDateTime baseEnd = LocalDateTime.parse(endDatetime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime roundedEnd = switch (unit) {
+            case "day"    -> baseEnd.withHour(23).withMinute(59).withSecond(59).withNano(0);
+            case "hour"   -> baseEnd.withMinute(59).withSecond(59).withNano(0);
+            case "minute" -> baseEnd.withSecond(59).withNano(0);
+            case "second" -> baseEnd.withNano(999_999_999);
+            default       -> throw new IllegalArgumentException("invalid unit");
+        };
+
+        Timestamp endT = Timestamp.valueOf(roundedEnd);
+
+        // log.info("startT"+startT);
+        // log.info("endT"+endT);
+        // log.info("unitKeyword"+unitKeyword);
+        // log.info("formatPattern"+formatPattern);
+
+        Mono<List<Map<String, Object>>> flagsCMono = mssqlTableRepository.findAiDaemonFlagCount("C", startT, endT, unitKeyword, formatPattern, aggType); // s
+        Mono<List<Map<String, Object>>> flagsTMono = mssqlTableRepository.findAiDaemonFlagCount("T", startT, endT, unitKeyword, formatPattern, aggType); // s
+        Mono<List<Map<String, Object>>> flagSCMono = mssqlTableRepository.findAiDaemonFlagCount2("C", startT, endT, unitKeyword, formatPattern, aggType); // S
+        Mono<List<Map<String, Object>>> flagSTMono = mssqlTableRepository.findAiDaemonFlagCount2("T", startT, endT, unitKeyword, formatPattern, aggType); // S
+        Mono<List<Map<String, Object>>> flagCMono = mssqlTableRepository.findAiDaemonFlagCount3("C", startT, endT, unitKeyword, formatPattern, aggType); // E
+        Mono<List<Map<String, Object>>> flagTMono = mssqlTableRepository.findAiDaemonFlagCount3("T", startT, endT, unitKeyword, formatPattern, aggType); // E
+
+        return Mono.zip(flagsCMono, flagsTMono, flagSCMono, flagSTMono, flagCMono, flagTMono)
+                .map(tuple -> {
+                    Map<String, List<Map<String, Object>>> result = new HashMap<>();
+                    result.put("flagsC", tuple.getT1());
+                    result.put("flagsT", tuple.getT2());
+                    result.put("flagSC", tuple.getT3());
+                    result.put("flagST", tuple.getT4());
+                    result.put("flagEC", tuple.getT5());
+                    result.put("flagET", tuple.getT6());
+                    return result;
+                });
+    }
+
+    public Mono<Map<String, List<Map<String, Object>>>> getPeriodChart(String start, String end, String div, String unit, String aggType) {
+        return getAiSmryPeriodChart(start, end, div, unit, aggType);
+    }
+
+    public Mono<Map<String, List<Map<String, Object>>>> getAiSmryPeriodChart(String startYmdHms, String endYmdHms, String div, String unit, String aggType) {
+
+        String formatPattern = getDatetimeFormat(unit);
+        String startDatetime = formatToMssqlDatetime(startYmdHms);
+        String endDatetime = formatToMssqlDatetime(endYmdHms);
+
+        log.info("startDatetime"+startDatetime);
+        log.info("endDatetime"+endDatetime);
+        log.info("unit"+unit);
+        log.info("formatPattern"+formatPattern);
+        log.info("aggType"+aggType);
+
+        String unitKeyword = switch (unit) {
+            case "day" -> "DAY";
+            case "hour" -> "HOUR";
+            case "minute" -> "MINUTE";
+            case "second" -> "SECOND";
+            default -> throw new IllegalArgumentException("Invalid unit: " + unit);
+        };
+
+        LocalDateTime baseStart = LocalDateTime.parse(startDatetime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime roundedStart = switch (unit) {
+            case "day"    -> baseStart.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case "hour"   -> baseStart.withMinute(0).withSecond(0).withNano(0);
+            case "minute" -> baseStart.withSecond(0).withNano(0);
+            case "second" -> baseStart.withNano(0);
+            default       -> throw new IllegalArgumentException("invalid unit");
+        };        
+
+        Timestamp startT = Timestamp.valueOf(roundedStart);
+
+        LocalDateTime baseEnd = LocalDateTime.parse(endDatetime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime roundedEnd = switch (unit) {
+            case "day"    -> baseEnd.withHour(23).withMinute(59).withSecond(59).withNano(0);
+            case "hour"   -> baseEnd.withMinute(59).withSecond(59).withNano(0);
+            case "minute" -> baseEnd.withSecond(59).withNano(0);
+            case "second" -> baseEnd.withNano(999_999_999);
+            default       -> throw new IllegalArgumentException("invalid unit");
+        };
+
+        Timestamp endT = Timestamp.valueOf(roundedEnd);
+
+        // log.info("startT"+startT);
+        // log.info("endT"+endT);
+        // log.info("unitKeyword"+unitKeyword);
+        // log.info("formatPattern"+formatPattern);
+
+        Mono<List<Map<String, Object>>> flagsMono = mssqlTableRepository.findAiDaemonFlagCount(div, startT, endT, unitKeyword, formatPattern, aggType);
+        Mono<List<Map<String, Object>>> flagSMono = mssqlTableRepository.findAiDaemonFlagCount2(div, startT, endT, unitKeyword, formatPattern, aggType);
+        Mono<List<Map<String, Object>>> flagEMono = mssqlTableRepository.findAiDaemonFlagCount3(div, startT, endT, unitKeyword, formatPattern, aggType);
+
+        return Mono.zip(flagsMono, flagSMono, flagEMono)
+                .map(tuple -> {
+                    Map<String, List<Map<String, Object>>> result = new HashMap<>();
+                    if("C".equals(div)){
+                        result.put("flagsC", tuple.getT1());
+                        result.put("flagSC", tuple.getT2());
+                        result.put("flagEC", tuple.getT3());    
+                    } else {
+                        result.put("flagsT", tuple.getT1());
+                        result.put("flagST", tuple.getT2());
+                        result.put("flagET", tuple.getT3());    
+                    }
+                    return result;
+                });
+    }
+
+    private String getDatetimeFormat(String unit) {
+
+        return switch (unit) {
+            case "day" -> "yyyy-MM-dd";
+            case "hour" -> "yyyy-MM-dd HH";
+            case "minute" -> "yyyy-MM-dd HH:mm";
+            case "second" -> "yyyy-MM-dd HH:mm:ss";
+            default -> throw new IllegalArgumentException("Invalid unit: " + unit);
+        };
+
+    }
+
+    private String formatToMssqlDatetime(String yyyymmddHHmmss) {
+
+        return yyyymmddHHmmss.replaceFirst(
+            "(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})",
+            "$1-$2-$3 $4:$5:$6"
+        );
+
+    }
+
+    /*
+    public Mono<List<Map<String, Object>>> findGpuMonitor(String sysDivCd, Instant start, Instant end, Long timeStep) {
+
+        String rawQuery = "sum(DCGM_FI_DEV_GPU_UTIL{Hostname=~\"aioperat1p\"}) by (pod,instance,uuid,gpu)";
+        String encodedQuery = encodePrometheusQuery(rawQuery);
+
+        String startStr = DateTimeFormatter.ISO_INSTANT.format(start);
+        String endStr = DateTimeFormatter.ISO_INSTANT.format(end);
+
+        String fullUrl = "http://10.92.51.69:30003/api/v1/query_range" +
+                "?query=" + encodedQuery +
+                "&start=" + startStr +
+                "&end=" + endStr +
+                "&step=" + timeStep + "s";
+
+        return webClient.get()
+                .uri(URI.create(fullUrl))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .flatMapMany(response -> {
+                    List<Map<String, Object>> result = (List<Map<String, Object>>)
+                            ((Map<?, ?>) response.get("data")).get("result");
+                    return Flux.fromIterable(result);
+                })
+                .publishOn(Schedulers.boundedElastic())
+                .flatMap(metricData -> {
+                    Map<String, Object> metric = (Map<String, Object>) metricData.get("metric");
+                    List<List<Object>> values = (List<List<Object>>) metricData.get("values");
+
+                    String gpuIdx = (String) metric.get("gpu");
+
+                    if (values == null || values.isEmpty()) {
+                        log.warn("Values가 없음: gpuIdx={}", gpuIdx);
+                        return Flux.empty();
+                    }
+
+                    List<Object> lastValue = values.get(values.size() - 1);
+
+                    Double timestamp = (Double) lastValue.get(0);
+                    String usageStr = (String) lastValue.get(1);
+
+                    Map<String, Object> findData = Map.of(
+                            "gpuIdx", gpuIdx,
+                            "timestamp", timestamp.longValue(),
+                            "usage", Integer.parseInt(usageStr)
+                    );
+                    return Mono.just(findData);
+                })
+                .collectList();
+    }
+
+    private String encodePrometheusQuery(String query) {
+        return query.replace(" ", "%20")
+                .replace("{", "%7B")
+                .replace("}", "%7D")
+                .replace("\"", "%22")
+                .replace("(", "%28")
+                .replace(")", "%29")
+                .replace("|", "%7C")
+                .replace("*", "%2A");
+    }
+    */
+
+    public Mono<ResponseEntity<byte[]>> generateExcel(String dateStr) {
+        LocalDate date = LocalDate.parse(dateStr);
+        List<Map<String, Object>> data = mssqlTableRepository.findDataByDate(date);
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Data");
+            int rowNum = 0;
+
+            // Excel 헤더
+            String[] excelHeaders = { "REC_ID", "RECORD_DURATION", "CNVR_ST_DTM", "STT_ST_DTM", "STT_ED_DTM", "STT_TOTAL_DURATION", "STT_DURATION", "PCS_ST_DTM", "PCS_ED_DTM", "SMRY_DURATION", "PROG_STAT_CD", "RSLT_STAT_MSG", "WGHT_CD", "HS", "TOTAL_EXCUTION_TIME" };
+            Row headerRow = sheet.createRow(rowNum++);
+            for (int i = 0; i < excelHeaders.length; i++) {
+                headerRow.createCell(i).setCellValue(excelHeaders[i]);
+            }
+
+
+            for (Map<String, Object> row : data) {
+                Row excelRow = sheet.createRow(rowNum++);
+                excelRow.createCell(0).setCellValue(safeStr(row.get("REC_ID")));
+                excelRow.createCell(1).setCellValue(safeStr(row.get("RECORD_DURATION")));
+                excelRow.createCell(2).setCellValue(safeStr(row.get("CNVR_ST_DTM")));
+                excelRow.createCell(3).setCellValue(safeStr(row.get("STT_ST_DTM")));
+                excelRow.createCell(4).setCellValue(safeStr(row.get("STT_ED_DTM")));
+                excelRow.createCell(5).setCellValue(safeStr(row.get("STT_TOTAL_DURATION")));
+                excelRow.createCell(6).setCellValue(safeStr(row.get("STT_DURATION")));
+                excelRow.createCell(7).setCellValue(safeStr(row.get("PCS_ST_DTM")));
+                excelRow.createCell(8).setCellValue(safeStr(row.get("PCS_ED_DTM")));
+                excelRow.createCell(9).setCellValue(safeStr(row.get("SMRY_DURATION")));
+                excelRow.createCell(10).setCellValue(safeStr(row.get("PROG_STAT_CD")));
+                excelRow.createCell(11).setCellValue(safeStr(row.get("RSLT_STAT_MSG")));
+                excelRow.createCell(12).setCellValue(safeStr(row.get("WGHT_CD")));
+                excelRow.createCell(13).setCellValue(safeStr(row.get("HS")));
+                excelRow.createCell(14).setCellValue(safeStr(row.get("TOTAL_EXCUTION_TIME")));
+            }
+
+            workbook.write(out);
+            byte[] bytes = out.toByteArray();
+
+            // HTTP 헤더
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            httpHeaders.setContentDisposition(ContentDisposition.attachment().filename("data_" + dateStr + ".xlsx").build());
+
+            return Mono.just(ResponseEntity.ok().headers(httpHeaders).body(bytes));
+        } catch (IOException e) {
+            return Mono.error(e);
+        }
+    }
+
+    public Mono<Map<String, Object>> getDetailData(String start, String end, int limit, String progStatCd, String sysDivCd, String lastDate){
+
+        return mssqlTableRepository.findDetailData(start, end, limit, progStatCd, sysDivCd, lastDate)
+                            .map(dataList -> {
+                                Map<String, Object> result = new HashMap<>();
+                                result.put("dataList", dataList);
+                                return result;
+                            });
+    }
+
+    private String safeStr(Object obj) {
+        return obj == null ? "" : obj.toString();
+    }
+
+
+    public Mono<Integer> countRowsByDate(String date) {
+        LocalDate localDate = LocalDate.parse(date);
+        List<Map<String, Object>> result = mssqlTableRepository.findDataByDate(localDate);
+        return Mono.just(result.size());
+    }
+
+
+}
+*/

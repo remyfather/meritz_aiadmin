@@ -1,0 +1,183 @@
+package smart.ai.admin.util;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpCookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import reactor.core.publisher.Mono;
+
+// TODO: V2 개발 완료 후 기존 외부 JWT 유틸리티 복원 필요
+// 기존 외부 JWT 유틸리티 - V2 개발 중 임시 주석 처리
+/*
+@Component
+public class JwtUtil {
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    WebClient authServer;
+*/
+
+    public Optional<String> getAccessToken(ServerHttpRequest request) {
+        HttpCookie token = request.getCookies().getFirst("access");
+        if (token == null) {
+            return Optional.empty();
+        }
+        String accessToken = token.getValue();
+        return Optional.of(accessToken);
+    }
+
+    public Optional<String> getAccessToken(ServerHttpResponse response) {
+        HttpCookie token = response.getCookies().getFirst("access");
+        if (token == null) {
+            return Optional.empty();
+        }
+        String accessToken = token.getValue();
+        return Optional.of(accessToken);
+    }
+
+    public Optional<String> getRefreshToken(ServerHttpRequest request) {
+        HttpCookie token = request.getCookies().getFirst("refresh");
+        if (token == null) {
+            return Optional.empty();
+        }
+        String refreshToken = token.getValue();
+        return Optional.of(refreshToken);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Optional<Map<String, Object>> getPayload(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return Optional.empty();
+            }
+            String encPaylod = parts[1];
+            byte[] decBytes = Base64.getUrlDecoder().decode(encPaylod);
+            String decPayload = new String(decBytes, StandardCharsets.UTF_8);
+            Map<String, Object> payload = objectMapper.readValue(decPayload, Map.class);
+            return Optional.of(payload);
+        } catch (Exception e) {
+            log.warn("Error while getting paylod: " + e.toString());
+        }
+        return Optional.empty();
+    }
+
+    public Optional<Map<String, Object>> getPayload(ServerHttpRequest request) {
+        Optional<String> tokenOptional = this.getAccessToken(request);
+        if (tokenOptional.isEmpty()) {
+            return Optional.empty();
+        }
+        String token = tokenOptional.get();
+        return this.getPayload(token);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Optional<String> getPayloadValue(String token, String key) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return Optional.empty();
+            }
+            String encPaylod = parts[1];
+            byte[] decBytes = Base64.getUrlDecoder().decode(encPaylod);
+            String decPayload = new String(decBytes, StandardCharsets.UTF_8);
+            Map<String, Object> payload = objectMapper.readValue(decPayload, Map.class);
+            String value = String.valueOf(payload.get(key));
+            if (value.equals("null"))
+                return Optional.empty();
+            return Optional.of(value);
+        } catch (Exception e) {
+            log.warn("Error while getting value from paylod. " + e.toString());
+        }
+        return Optional.empty();
+    }
+
+    public Optional<String> getPayloadValue(ServerHttpRequest request, String key) {
+        Optional<String> tokenOptional = this.getAccessToken(request);
+        if (tokenOptional.isEmpty()) {
+            return Optional.empty();
+        }
+        String token = tokenOptional.get();
+        return this.getPayloadValue(token, key);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Mono<Map<String, Object>> issueJwt(String id, String pw) {
+        // JWT 발급 api 호출
+        String api = "/sportal/v3/api/authe/authenticate";
+        Map<String, String> user = new HashMap<>();
+        user.put("username", id);
+        user.put("password", pw);
+        return authServer.post()
+                .uri(builder -> builder.path(api).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(user)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                }).flatMap(res -> {
+                    try {
+                        if (!"200".equals(res.get("resultCode").toString())) {
+                            throw new Exception("failed to get token");
+                        }
+                        Map<String, Object> result = (Map<String, Object>) res.get("result");
+                        return Mono.just(result);
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
+                });
+    }
+
+    public Mono<Map<String, Object>> verifyJwt(String accessToken) {
+        // JWT 유효성 체크 api 호출
+        String api = "/sportal/v3/api/notify/info/retrieveMessageCenterMsgListCount.api";
+        return authServer.post()
+                .uri(api)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .header("PlatformCode", "GENTEXT")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("checkYn", "N"))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
+    }
+
+    @SuppressWarnings("unchecked")
+    public Mono<Map<String, Object>> refreshJwt(Optional<String> refreshToken) {
+        // JWT refresh api 호출
+        String api = "/sportal/v3/api/authe/refreshToken";
+        return authServer.post()
+                .uri(builder -> builder.path(api).queryParam("refreshToken", refreshToken).build())
+                .header("PlatformCode", "GENTEXT")
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                }).flatMap(res -> {
+                    try {
+                        if (!"200".equals(res.get("resultCode").toString())) {
+                            throw new Exception("failed to get token");
+                        }
+                        Map<String, Object> result = (Map<String, Object>) res.get("result");
+                        return Mono.just(result);
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
+                });
+    }
+}
+*/

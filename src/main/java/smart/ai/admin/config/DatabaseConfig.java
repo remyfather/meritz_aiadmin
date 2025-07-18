@@ -1,5 +1,9 @@
 package smart.ai.admin.config;
 
+// TODO: V2 개발 완료 후 기존 DB 설정 복원 필요
+// 기존 외부 DB 설정 클래스 - V2 개발 중 임시 주석 처리
+
+/*
 import javax.sql.DataSource;
 
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -149,3 +153,4 @@ public class DatabaseConfig {
         return new JdbcTemplate(dataSource);
     }
 }
+*/

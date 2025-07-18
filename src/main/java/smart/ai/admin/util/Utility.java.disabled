@@ -1,0 +1,15 @@
+package smart.ai.admin.util;
+
+import org.springframework.ui.Model;
+import org.springframework.web.server.ServerWebExchange;
+
+// TODO: V2 개발 완료 후 기존 외부 유틸리티 복원 필요
+// 기존 외부 유틸리티 - V2 개발 중 임시 주석 처리
+/*
+public class Utility {
+    public static void setUserInfo(ServerWebExchange exchange, Model model) {
+        model.addAttribute("userRole", exchange.getAttributes().get("userRole"));
+        model.addAttribute("userName", exchange.getAttributes().get("userName"));
+    }
+}
+*/

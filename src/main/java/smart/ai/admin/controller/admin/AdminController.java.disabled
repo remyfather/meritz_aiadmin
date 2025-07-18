@@ -1,0 +1,88 @@
+package smart.ai.admin.controller.admin;
+
+import java.util.Map;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import reactor.core.publisher.Flux;
+import smart.ai.admin.service.admin.AdminService;
+
+// TODO: V2 개발 완료 후 기존 외부 관리 시스템 복원 필요
+// 기존 외부 관리 컨트롤러 - V2 개발 중 임시 주석 처리
+/*
+@RestController
+@RequestMapping("/api/admin")
+public class AdminController {
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
+    @Autowired
+    AdminService adminService;
+
+    @PostMapping("/start")
+    public Flux<ServerSentEvent<String>> startService(@RequestBody Map<String, Object> req) {
+        log.info(req.toString());
+        String hostName = String.valueOf(req.get("hostName"));
+        String target = String.valueOf(req.get("target"));
+        String num = String.valueOf(req.get("num"));
+
+        if ("null".equals(target) || "null".equals(num) || "null".equals(hostName)) {
+            return Flux.error(new IllegalArgumentException("invalid arguments"));
+        }
+        return adminService.startService(hostName, target, num);
+    }
+
+    @PostMapping("/stop")
+    public Flux<ServerSentEvent<String>> stopService(@RequestBody Map<String, Object> req) {
+        log.info(req.toString());
+        String hostName = String.valueOf(req.get("hostName"));
+        String target = String.valueOf(req.get("target"));
+        String num = String.valueOf(req.get("num"));
+
+        if ("null".equals(target) || "null".equals(num) || "null".equals(hostName)) {
+            return Flux.error(new IllegalArgumentException("invalid arguments"));
+        }
+        return adminService.stopService(hostName, target, num);
+    }
+
+    @PostMapping("/update")
+    public Flux<ServerSentEvent<String>> updateService(@RequestBody Map<String, Object> req) {
+        log.info(req.toString());
+        String hostName = String.valueOf(req.get("hostName"));
+        String target = String.valueOf(req.get("target"));
+        String num = String.valueOf(req.get("num"));
+        String cnt = String.valueOf(req.get("cnt"));
+
+        if ("null".equals(target) || "null".equals(num) || "null".equals(hostName) || "null".equals(cnt)) {
+            return Flux.error(new IllegalArgumentException("invalid arguments"));
+        }
+        return adminService.updateService(hostName, target, num, cnt);
+    }
+    
+    @PostMapping("/status")
+    public Flux<ServerSentEvent<String>> getStatus(@RequestBody Map<String, Object> req) {
+        log.info(req.toString());
+        Set<String> hostSet = req.keySet();
+        if (hostSet.size() == 0) {
+            return Flux.error(new IllegalArgumentException("invalid arguments"));
+        }
+        return adminService.getStatus(req);
+    }
+    
+    @PostMapping("/thread-cnt")
+    public Flux<ServerSentEvent<String>> getThreadCnt(@RequestBody Map<String, Object> req) {
+        log.info(req.toString());
+        Set<String> hostSet = req.keySet();
+        if (hostSet.size() == 0) {
+            return Flux.error(new IllegalArgumentException("invalid arguments"));
+        }
+        return adminService.getThreadCnt(req);
+    }
+}
+*/
