@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- 파비콘 설정 -->
+    <link rel="icon" th:href="@{/meritz_favicon.ico}">
+    
+    <!-- CSS 파일 로드 -->
+    <link rel="stylesheet" th:href="@{/css/root.css}">
+    <link rel="stylesheet" th:href="@{/css/auth/login.css}">
+    
+    <title>AI Admin - Login</title>
+    
+    <!-- JavaScript 라이브러리 로드 -->
+    <script th:src="@{/lib/sweetalert2-11.21.2/sweetalert2.all.min.js}"></script>
+    <script th:src="@{/lib/bootstrap-5.3.6-dist/js/bootstrap.bundle.min.js}"></script>
+    
+    <!-- 로그인 기능 JavaScript -->
+    <script th:src="@{/js/auth/login.js}"></script>
+    
+    <!-- 로딩 스피너 컴포넌트 -->
+    <th:block th:insert="~{common/loading-spinner::loadingSpinner}"></th:block>
+</head>
+
+<body class="login-wrapper">
+    <!-- 로그인 메인 컨테이너 -->
+    <main class="login-container">
+        <!-- 로그인 헤더 -->
+        <h2 class="login-header">AI Admin</h2>
+        <div class="divider"></div>
+        <h3 class="login-header">Login</h3>
+        
+        <!-- 로그인 입력 폼 -->
+        <div class="login-input">
+            <!-- 사용자 ID 입력 필드 -->
+            <div class="login-input-elem">
+                <label for="userid">User ID:</label>
+                <input type="text" id="userid" name="userid" />
+            </div>
+            
+            <!-- 비밀번호 입력 필드 -->
+            <div class="login-input-elem">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required />
+            </div>
+            
+            <!-- 로그인 버튼 -->
+            <button type="submit" class="btn btn-primary login-btn" onclick="login()">Login</button>
+        </div>
+    </main>
+</body>
+
+</html>

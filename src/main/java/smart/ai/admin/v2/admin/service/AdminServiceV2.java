@@ -1,4 +1,4 @@
-package smart.ai.admin.v2.auth.service;
+package smart.ai.admin.v2.admin.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -42,15 +42,17 @@ public class AdminServiceV2 {
     }
 
     public UserDto createUser(UserDto userDto) {
-        // 기본 비밀번호 설정 (사용자가 나중에 변경하도록)
-        String defaultPassword = "password123";
-        
         User user = new User();
         user.setName(userDto.getName());
         user.setUsername(userDto.getUsername());
         user.setEmail(userDto.getEmail());
-        user.setPassword(passwordEncoder.encode(defaultPassword));
-        user.setEnabled(true);
+        
+        // 비밀번호 설정 (제공된 경우 사용, 없으면 기본값)
+        String password = userDto.getPassword() != null && !userDto.getPassword().trim().isEmpty() 
+            ? userDto.getPassword() 
+            : "password123";
+        user.setPassword(passwordEncoder.encode(password));
+        user.setEnabled(userDto.isEnabled());
         
         // 역할 설정
         Role role = roleRepository.findByName(userDto.getRole())
@@ -68,6 +70,11 @@ public class AdminServiceV2 {
         user.setName(userDto.getName());
         user.setEmail(userDto.getEmail());
         user.setEnabled(userDto.isEnabled());
+        
+        // 비밀번호가 제공된 경우 업데이트
+        if (userDto.getPassword() != null && !userDto.getPassword().trim().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        }
         
         if (userDto.getRole() != null && !userDto.getRole().equals(user.getRole().getName())) {
             Role role = roleRepository.findByName(userDto.getRole())

@@ -30,19 +30,22 @@ public class SuperAdminServiceV2 {
     @Transactional
     public Mono<ResponseEntity<Map<String, Object>>> createSuperAdmin(SuperAdminRequest request) {
         return Mono.fromCallable(() -> {
-            log.info("슈퍼 관리자 등록 요청: {}", request.getUsername());
+            log.info("=== 슈퍼 관리자 등록 트랜잭션 시작 ===");
+            log.info("슈퍼 관리자 등록 요청: 사용자명={}, 이메일={}", request.getUsername(), request.getEmail());
             
             // 1. 시스템 키 검증
             if (!systemKey.equals(request.getSystemKey())) {
                 log.warn("슈퍼 관리자 등록 실패: 잘못된 시스템 키");
+                log.info("=== 슈퍼 관리자 등록 트랜잭션 실패 (잘못된 시스템 키) ===");
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "잘못된 시스템 키입니다"
                 ));
             }
             
-            // 2. 이미 슈퍼 관리자가 있는지 확인
+            // 2. 중복 검사
             if (userRepository.existsByUsername(request.getUsername())) {
                 log.warn("슈퍼 관리자 등록 실패: 사용자명 중복 - {}", request.getUsername());
+                log.info("=== 슈퍼 관리자 등록 트랜잭션 실패 (사용자명 중복) ===");
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "이미 사용 중인 사용자명입니다"
                 ));
@@ -50,6 +53,7 @@ public class SuperAdminServiceV2 {
             
             if (userRepository.existsByEmail(request.getEmail())) {
                 log.warn("슈퍼 관리자 등록 실패: 이메일 중복 - {}", request.getEmail());
+                log.info("=== 슈퍼 관리자 등록 트랜잭션 실패 (이메일 중복) ===");
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "이미 사용 중인 이메일입니다"
                 ));
@@ -58,6 +62,7 @@ public class SuperAdminServiceV2 {
             // 3. SUPER_ADMIN 역할 조회 또는 생성
             Role superAdminRole = roleRepository.findByName("SUPER_ADMIN")
                     .orElseGet(() -> {
+                        log.info("SUPER_ADMIN 역할이 없어 새로 생성합니다.");
                         Role role = Role.builder()
                                 .name("SUPER_ADMIN")
                                 .description("시스템 최고 관리자")
@@ -82,14 +87,19 @@ public class SuperAdminServiceV2 {
             // 5. 사용자 저장
             User savedSuperAdmin = userRepository.save(superAdmin);
             
-            log.info("슈퍼 관리자 등록 성공: {}", savedSuperAdmin.getUsername());
+            log.info("슈퍼 관리자 등록 성공: 사용자명={}", savedSuperAdmin.getUsername());
+            log.info("=== 슈퍼 관리자 등록 트랜잭션 성공 ===");
             
             return ResponseEntity.ok(Map.of(
+                "success", true,
                 "message", "슈퍼 관리자가 성공적으로 등록되었습니다",
+                "user", Map.of(
+                    "id", savedSuperAdmin.getId(),
                 "username", savedSuperAdmin.getUsername(),
                 "name", savedSuperAdmin.getName(),
                 "email", savedSuperAdmin.getEmail(),
-                "role", "SUPER_ADMIN"
+                    "role", savedSuperAdmin.getRole().getName()
+                )
             ));
         });
     }

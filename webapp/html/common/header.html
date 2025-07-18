@@ -3,11 +3,37 @@
     <link rel="stylesheet" th:href="@{/lib/bootstrap-icons-1.13.1/bootstrap-icons.min.css}">
     <script th:src="@{/js/common/header.js}"></script>
     <script th:inline="javascript">
-        const userName = [[${userName}]];
-        if (userName === "" || userName === null) {
-            logout();
-            window.location.href = '/login';
-        }
+        // 클라이언트 사이드에서 사용자 정보 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const userName = user.name || user.username || '';
+            
+            if (!userName || !localStorage.getItem('accessToken')) {
+                console.log('사용자 정보 없음, 로그인 페이지로 이동');
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return;
+            }
+            
+            // 사용자명 표시
+            const userNameElement = document.querySelector('.user-info span');
+            if (userNameElement) {
+                userNameElement.textContent = userName;
+            }
+            
+            // 역할에 따른 메뉴 표시/숨김
+            const userRole = user.role || '';
+            const adminMenu = document.querySelector('.nav-item.dropdown[th\\:if*="userRole"]');
+            if (adminMenu) {
+                if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
+                    adminMenu.style.display = 'block';
+                } else {
+                    adminMenu.style.display = 'none';
+                }
+            }
+        });
     </script>
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
@@ -39,13 +65,19 @@
                             <li><a class="dropdown-item" th:href="@{/monitor/gpu-daily}">GPU 실시간 조회</a></li>                            
                         </ul>
                     </li>
-                    <li class="nav-item dropdown" th:if="${userRole == 'SAU'}">
+                    <li class="nav-item dropdown" id="adminMenu" style="display: none;">
                         <a class="nav-link dropdown-toggle text-light" id="navbarDropdownMenuLink2" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             관리자
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink2">
-                            <li><a class="dropdown-item" th:href="@{/admin/service}">서비스 설정</a></li>
+                            <li><a class="dropdown-item" th:href="@{/admin/users}">
+                                <i class="bi bi-people me-2"></i>User Management
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" th:href="@{/admin/service}">
+                                <i class="bi bi-gear me-2"></i>서비스 설정
+                            </a></li>
                         </ul>
                     </li>
                 </ul>
@@ -54,7 +86,7 @@
     </nav>
     <div class="user-info">
         <div>
-            <span th:text="${userName}"></span>
+            <span>사용자</span>
             님
         </div>
         <button class="btn btn-dark" onclick="logout()"> 

@@ -27,60 +27,67 @@ public class AuthServiceV2 {
     
     public Mono<ResponseEntity<Map<String, Object>>> login(ServerWebExchange exchange, String username, String password) {
         return Mono.fromCallable(() -> {
+            log.info("=== 로그인 트랜잭션 시작 ===");
+            log.info("로그인 시도: 사용자명={}", username);
+            
             // 사용자 조회
             User user = userRepository.findByUsername(username)
                     .orElse(null);
             
             if (user == null) {
-                log.warn("Login failed: User not found - {}", username);
-                return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+                log.warn("로그인 실패: 사용자를 찾을 수 없음 - {}", username);
+                log.info("=== 로그인 트랜잭션 실패 (사용자 없음) ===");
+                return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "error", "사용자를 찾을 수 없습니다",
+                    "errorCode", "USER_NOT_FOUND"
+                ));
             }
             
             // 비밀번호 검증
             if (!user.checkPassword(password)) {
-                log.warn("Login failed: Invalid password for user - {}", username);
-                return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+                log.warn("로그인 실패: 잘못된 비밀번호 - {}", username);
+                log.info("=== 로그인 트랜잭션 실패 (비밀번호 오류) ===");
+                return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "error", "비밀번호가 올바르지 않습니다",
+                    "errorCode", "INVALID_PASSWORD"
+                ));
             }
             
             // 계정 상태 확인
             if (!user.isEnabled()) {
-                log.warn("Login failed: Inactive account - {}", username);
-                return ResponseEntity.status(401).body(Map.of("error", "Account is not active"));
+                log.warn("로그인 실패: 비활성 계정 - {}", username);
+                log.info("=== 로그인 트랜잭션 실패 (비활성 계정) ===");
+                return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "error", "비활성화된 계정입니다. 관리자에게 문의하세요",
+                    "errorCode", "ACCOUNT_DISABLED"
+                ));
             }
             
             // JWT 토큰 생성
             String accessToken = jwtUtilV2.generateAccessToken(user);
             String refreshToken = jwtUtilV2.generateRefreshToken(user);
             
-            // 쿠키 설정
-            ServerHttpResponse response = exchange.getResponse();
-            ResponseCookie accessTokenCookie = ResponseCookie.from("access", accessToken)
-                    .maxAge(Duration.ofMinutes(45))
-                    .path("/")
-                    .httpOnly(true)
-                    .build();
-            response.addCookie(accessTokenCookie);
-            
-            ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh", refreshToken)
-                    .maxAge(Duration.ofMinutes(110))
-                    .path("/")
-                    .httpOnly(true)
-                    .build();
-            response.addCookie(refreshTokenCookie);
-            
             // 마지막 로그인 시간 업데이트
             user.setLastLoginAt(LocalDateTime.now());
             userRepository.save(user);
             
-            log.info("Login successful: {}", username);
+            log.info("로그인 성공: 사용자={}, 역할={}", username, user.getRole().getName());
+            log.info("=== 로그인 트랜잭션 성공 ===");
             
             Map<String, Object> result = new HashMap<>();
-            result.put("message", "Login successful");
+            result.put("success", true);
+            result.put("message", "로그인에 성공했습니다");
+            result.put("accessToken", accessToken);
+            result.put("refreshToken", refreshToken);
             result.put("user", Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),
                 "name", user.getName(),
-                "email", user.getEmail()
+                "email", user.getEmail(),
+                "role", user.getRole().getName()
             ));
             
             return ResponseEntity.ok(result);
@@ -89,32 +96,21 @@ public class AuthServiceV2 {
     
     public Mono<ResponseEntity<Void>> logout(ServerWebExchange exchange) {
         return Mono.fromCallable(() -> {
-            ServerHttpResponse response = exchange.getResponse();
-            
-            // 쿠키 삭제
-            ResponseCookie accessTokenCookie = ResponseCookie.from("access", "")
-                    .maxAge(0)
-                    .path("/")
-                    .httpOnly(true)
-                    .build();
-            response.addCookie(accessTokenCookie);
-            
-            ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh", "")
-                    .maxAge(0)
-                    .path("/")
-                    .httpOnly(true)
-                    .build();
-            response.addCookie(refreshTokenCookie);
-            
-            log.info("Logout successful");
-            return ResponseEntity.noContent().<Void>build();
+            log.info("=== 로그아웃 트랜잭션 시작 ===");
+            log.info("로그아웃 요청 처리 중...");
+            log.info("=== 로그아웃 트랜잭션 완료 ===");
+            return ResponseEntity.ok().<Void>build();
         });
     }
     
     public Mono<ResponseEntity<Map<String, Object>>> refreshToken(ServerWebExchange exchange, String refreshToken) {
         return Mono.fromCallable(() -> {
+            log.info("=== 토큰 갱신 트랜잭션 시작 ===");
+            log.info("토큰 갱신 요청 처리 중...");
+            
             if (!jwtUtilV2.validateToken(refreshToken)) {
-                log.warn("Token refresh failed: Invalid refresh token");
+                log.warn("토큰 갱신 실패: 유효하지 않은 리프레시 토큰");
+                log.info("=== 토큰 갱신 트랜잭션 실패 (유효하지 않은 토큰) ===");
                 return ResponseEntity.status(401).body(Map.of("error", "Invalid refresh token"));
             }
             
@@ -122,7 +118,8 @@ public class AuthServiceV2 {
             User user = userRepository.findByUsername(username).orElse(null);
             
             if (user == null) {
-                log.warn("Token refresh failed: User not found - {}", username);
+                log.warn("토큰 갱신 실패: 사용자를 찾을 수 없음 - {}", username);
+                log.info("=== 토큰 갱신 트랜잭션 실패 (사용자 없음) ===");
                 return ResponseEntity.status(401).body(Map.of("error", "User not found"));
             }
             
@@ -130,26 +127,14 @@ public class AuthServiceV2 {
             String newAccessToken = jwtUtilV2.generateAccessToken(user);
             String newRefreshToken = jwtUtilV2.generateRefreshToken(user);
             
-            // 쿠키 업데이트
-            ServerHttpResponse response = exchange.getResponse();
-            ResponseCookie accessTokenCookie = ResponseCookie.from("access", newAccessToken)
-                    .maxAge(Duration.ofMinutes(45))
-                    .path("/")
-                    .httpOnly(true)
-                    .build();
-            response.addCookie(accessTokenCookie);
-            
-            ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh", newRefreshToken)
-                    .maxAge(Duration.ofMinutes(110))
-                    .path("/")
-                    .httpOnly(true)
-                    .build();
-            response.addCookie(refreshTokenCookie);
-            
-            log.info("Token refresh successful: {}", username);
+            log.info("토큰 갱신 성공: 사용자={}", username);
+            log.info("=== 토큰 갱신 트랜잭션 성공 ===");
             
             Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
             result.put("message", "Token refreshed successfully");
+            result.put("accessToken", newAccessToken);
+            result.put("refreshToken", newRefreshToken);
             
             return ResponseEntity.ok(result);
         });

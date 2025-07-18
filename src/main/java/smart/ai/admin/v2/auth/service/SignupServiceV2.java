@@ -29,11 +29,13 @@ public class SignupServiceV2 {
     @Transactional
     public Mono<ResponseEntity<Map<String, Object>>> signup(SignupRequest request) {
         return Mono.fromCallable(() -> {
-            log.info("회원가입 요청: {}", request.getUsername());
+            log.info("=== 회원가입 트랜잭션 시작 ===");
+            log.info("회원가입 요청: 사용자명={}, 이메일={}", request.getUsername(), request.getEmail());
             
             // 1. 중복 검사
             if (userRepository.existsByUsername(request.getUsername())) {
                 log.warn("회원가입 실패: 사용자명 중복 - {}", request.getUsername());
+                log.info("=== 회원가입 트랜잭션 실패 (사용자명 중복) ===");
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "이미 사용 중인 사용자명입니다"
                 ));
@@ -41,6 +43,7 @@ public class SignupServiceV2 {
             
             if (userRepository.existsByEmail(request.getEmail())) {
                 log.warn("회원가입 실패: 이메일 중복 - {}", request.getEmail());
+                log.info("=== 회원가입 트랜잭션 실패 (이메일 중복) ===");
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "이미 사용 중인 이메일입니다"
                 ));
@@ -50,6 +53,7 @@ public class SignupServiceV2 {
             Role defaultRole = roleRepository.findByName("USER")
                     .orElseGet(() -> {
                         // 기본 역할이 없으면 USER 역할 생성
+                        log.info("USER 역할이 없어 새로 생성합니다.");
                         Role userRole = Role.builder()
                                 .name("USER")
                                 .description("일반 사용자")
@@ -74,24 +78,19 @@ public class SignupServiceV2 {
             // 4. 사용자 저장
             User savedUser = userRepository.save(user);
             
-            // 5. 응답 생성
-            SignupResponse response = SignupResponse.builder()
-                    .id(savedUser.getId())
-                    .username(savedUser.getUsername())
-                    .name(savedUser.getName())
-                    .email(savedUser.getEmail())
-                    .phone(savedUser.getPhone())
-                    .status(savedUser.isEnabled() ? "ACTIVE" : "INACTIVE")
-                    .roles(Set.of(savedUser.getRole().getName()))
-                    .createdAt(savedUser.getCreatedAt())
-                    .message("회원가입이 완료되었습니다")
-                    .build();
-            
-            log.info("회원가입 성공: {}", savedUser.getUsername());
+            log.info("회원가입 성공: 사용자명={}, 역할={}", savedUser.getUsername(), savedUser.getRole().getName());
+            log.info("=== 회원가입 트랜잭션 성공 ===");
             
             return ResponseEntity.ok(Map.of(
+                "success", true,
                 "message", "회원가입이 완료되었습니다",
-                "user", response
+                "user", Map.of(
+                    "id", savedUser.getId(),
+                    "username", savedUser.getUsername(),
+                    "name", savedUser.getName(),
+                    "email", savedUser.getEmail(),
+                    "role", savedUser.getRole().getName()
+                )
             ));
         });
     }

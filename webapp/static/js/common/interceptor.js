@@ -69,6 +69,13 @@
             ...options.headers,
             'Content-Type': 'application/json',
         };
+        
+        // localStorage에서 accessToken 가져와서 Authorization 헤더에 추가
+        const accessToken = localStorage.getItem('accessToken');
+        if (accessToken) {
+            options.headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
         return [url, options];
     });
 
@@ -80,9 +87,40 @@
                 return Promise.reject(response);
             }
             case 401: {
-                fetch('/api/auth/logout', {
-                    method: 'POST'
-                }).then(() => window.location.href = '/login');
+                // 토큰 갱신 시도
+                const refreshToken = localStorage.getItem('refreshToken');
+                if (refreshToken) {
+                    try {
+                        const refreshResponse = await fetch('/api/v2/auth/refresh', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ refreshToken: refreshToken })
+                        });
+                        
+                        if (refreshResponse.ok) {
+                            const refreshData = await refreshResponse.json();
+                            localStorage.setItem('accessToken', refreshData.accessToken);
+                            localStorage.setItem('refreshToken', refreshData.refreshToken);
+                            
+                            // 원래 요청 재시도
+                            const originalRequest = response.config;
+                            if (originalRequest) {
+                                originalRequest.headers['Authorization'] = `Bearer ${refreshData.accessToken}`;
+                                return fetch(originalRequest.url, originalRequest);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Token refresh failed:', error);
+                    }
+                }
+                
+                // 토큰 갱신 실패 시 로그아웃
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
                 return Promise.reject(response);
             }
             case 500: {

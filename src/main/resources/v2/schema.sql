@@ -39,11 +39,14 @@ CREATE TABLE IF NOT EXISTS menus (
     sort_order INT DEFAULT 0,
     enabled BOOLEAN DEFAULT TRUE,
     type VARCHAR(20) DEFAULT 'MENU',
+    parent_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_sort_order (sort_order),
     INDEX idx_enabled (enabled),
-    INDEX idx_type (type)
+    INDEX idx_type (type),
+    INDEX idx_parent_id (parent_id),
+    FOREIGN KEY (parent_id) REFERENCES menus(id) ON DELETE SET NULL
 );
 
 -- 역할-메뉴 연결 테이블
@@ -59,7 +62,4 @@ CREATE TABLE IF NOT EXISTS role_menus (
     INDEX idx_menu_id (menu_id)
 );
 
--- 사용자 테이블에 외래키 제약 추가
-ALTER TABLE users 
-ADD CONSTRAINT fk_users_role 
-FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL; 
+-- 외래키 제약은 Hibernate가 자동으로 생성함 

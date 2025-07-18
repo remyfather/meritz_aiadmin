@@ -28,7 +28,15 @@ public class JwtUtilV2 {
     private int refreshTokenDuration;
     
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        // HS512 알고리즘을 위한 최소 512비트(64바이트) 키 생성
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 64) {
+            // 키가 너무 짧으면 패딩
+            byte[] paddedKey = new byte[64];
+            System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 64));
+            return Keys.hmacShaKeyFor(paddedKey);
+        }
+        return Keys.hmacShaKeyFor(keyBytes);
     }
     
     public String generateAccessToken(User user) {

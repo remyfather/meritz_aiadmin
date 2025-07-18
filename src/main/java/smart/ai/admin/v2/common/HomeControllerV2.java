@@ -20,7 +20,7 @@ public class HomeControllerV2 {
     @GetMapping("/login")
     public Mono<String> login() {
         log.info("Login page requested");
-        return Mono.just("login");
+        return Mono.just("auth/login");
     }
     
 
@@ -29,5 +29,11 @@ public class HomeControllerV2 {
     public Mono<String> monitor() {
         log.info("Monitor page requested");
         return Mono.just("monitor/daily");
+    }
+    
+    @GetMapping("/admin/users")
+    public Mono<String> adminUsers() {
+        log.info("Admin users page requested");
+        return Mono.just("admin/users");
     }
 } 

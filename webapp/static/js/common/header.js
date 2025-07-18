@@ -1,4 +1,18 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // 사용자 정보 확인 및 관리자 메뉴 표시
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userRole = user.role || '';
+    
+    // 관리자 메뉴 표시/숨김
+    const adminMenu = document.getElementById('adminMenu');
+    if (adminMenu) {
+        if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
+            adminMenu.style.display = 'block';
+        } else {
+            adminMenu.style.display = 'none';
+        }
+    }
+
     function getPath(path) {
         if (!path) return "/";
         if (path !== '/' && path.endsWith('/')) {
@@ -51,7 +65,22 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 async function logout() {
-    Fetcher('/api/auth/logout', {
+    Fetcher('/api/v2/auth/logout', {
         method: 'POST'
-    }).then(() => window.location.href = '/login');
+    }).then(() => {
+        // localStorage에서 토큰과 사용자 정보 삭제
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        
+        window.location.href = '/login';
+    }).catch(error => {
+        console.error('Logout error:', error);
+        // 에러가 발생해도 로컬 데이터는 삭제
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        
+        window.location.href = '/login';
+    });
 }
