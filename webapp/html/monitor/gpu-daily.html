@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:insert="~{common/config::configFragment}"></th:block>
+  <script th:src="@{/lib/highcharts-12.2.0/highcharts.js}"></script>
+  <script th:src="@{/js/monitor/gpu-daily.js}"></script>
+  <script>
+    Highcharts.setOptions({
+      credits: {enabled: false}
+    });
+  </script>
+</head>
+<body>
+  <th:block th:insert="~{common/loading-spinner::loadingSpinner}"></th:block>
+  <th:block th:insert="~{common/header::headerFragment}"></th:block>
+  <div class="container-fluid mt-4">
+    <main>
+      <h4>GPU 실시간 모니터링</h4>
+      <div class="row">
+        <div class="col-md-1">
+          <h6>서버 선택</h6>
+          <div id="div-filter-box" class="form-check">
+            <!-- 체크박스 자동 삽입 -->
+          </div>
+        </div>
+        <div class="col-md-11">
+          <div id="gpu-charts-container" class="d-flex flex-column gap-4" style="width: 80%;"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

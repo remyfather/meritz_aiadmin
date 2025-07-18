@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:insert="~{common/config::configFragment}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/admin/service.css}">
+    <script th:src="@{/js/admin/service.js}"></script>
+</head>
+    <th:block th:insert="~{common/header::headerFragment}"></th:block>
+    <main class="service" th:if="${userRole == 'SAU'}">
+        <div th:each="item : ${workers}">
+            <div th:insert="~{admin/component/service-accordion::serviceAccordion}"></div>
+        </div>
+        <div class="modal fade" id="dataModal" tabindex="-1" aria-labelledby="dataModalLabel" aria-hidden="true">
+            <div class="modal-dialog custom-modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="dataModalLabel">서버 응답</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body custom-modal-body">
+                        <p id="modalContent"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</html>

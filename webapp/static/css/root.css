@@ -1,0 +1,7 @@
+@import "../lib/bootstrap-5.3.6-dist/css/bootstrap.min.css";
+/* @import "../lib/bootstrap-icons-1.13.1/bootstrap-icons.min.css"; */
+@import "../lib/sweetalert2-11.21.2/sweetalert2.min.css";
+
+main {
+    padding: 5px;
+}

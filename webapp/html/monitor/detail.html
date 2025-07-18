@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:insert="~{common/config::configFragment}"></th:block>
+  <script th:src="@{/lib/highcharts-12.2.0/highcharts.js}"></script>
+  <script th:src="@{/js/monitor/detail.js}"></script>
+  <script>
+    Highcharts.setOptions({
+      credits: {enabled: false}
+    });
+  </script>
+</head>
+<body>
+  <th:block th:insert="~{common/loading-spinner::loadingSpinner}"></th:block>
+    <th:block th:insert="~{common/header::headerFragment}"></th:block>
+    <div class="container-fluid mt-4">
+      <main>
+        <h4>상세 데이터 조회</h4>
+        <div class="row mb-3 mb-3 align-items-end">
+          <div class="col-auto">
+            <label>시작</label>
+          </div>
+          <div class="col-auto">
+            <input type="date" id="startDate" class="form-control" oninput="normalizeDate(this)">
+          </div>
+          <div class="col-auto">
+            <input type="text" id="startTime" class="form-control" placeholder="HH:mm:ss" oninput="formatTime(this)">
+          </div>
+          <div class="col-auto">
+            <label>종료</label>
+          </div>  
+          <div class="col-auto">
+            <input type="date" id="endDate" class="form-control" oninput="normalizeDate(this)">
+          </div>
+          <div class="col-auto">
+            <input type="text" id="endTime" class="form-control" placeholder="HH:mm:ss" oninput="formatTime(this)">
+          </div>
+          <div class="col-auto">
+            <label>요약처리상태</label>
+          </div>  
+          <div class="col-auto">
+            <select id="progStatCd" class="form-select">
+              <option value = "A">전체</option>
+              <option value = "E">에러</option>
+              <option value = "C">완료</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <label>업무구분</label>
+          </div>  
+          <div class="col-auto">
+            <select id="sysDivCd" class="form-select">
+              <option value = "A">전체</option>
+              <option value = "C">Call</option>
+              <option value = "T">TM</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <button type="button" class="btn btn-primary" onclick="fetchDetailData(true)">조회</button>
+            <button type="button" class="btn btn-success ms-2" onclick="openDownloadPopup()">엑셀 다운로드</button>
+          </div>
+        </div>
+
+    <!-- 결과 테이블 -->
+    <div class="text-start" style="margin-left: -10px;">
+      <table class="table table-bordered table-hover table-sm" style="font-size: 11px; table-layout: auto; width:100%;">
+        <thead class="table-light">
+          <tr>
+            <th>녹취ID</th>
+            <th>녹취시간</th>
+            <th>STT변환준비</th>
+            <th>STT시작</th>
+            <th>STT끝</th>
+            <th>STT전체처리시간</th>
+            <th>STT처리시간</th>
+            <th>요약시작</th>
+            <th>요약끝</th>
+            <th>요약처리시간</th>
+            <th>요약상태코드</th>
+            <th>결과상태메세지</th>
+            <th>가중치코드</th>
+            <th>최종이력순번</th>
+            <th>TOTAL EXCUTION TIME</th>
+            <th>재처리</th>
+          </tr>
+        </thead>
+        <tbody id="resultTable">
+          <!-- 조회 결과 채워짐 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 페이징 -->
+    <div class="d-flex justify-content-center mb-3: center;" style="width: 100%">
+      <button class="btn btn-outline-secondary" id="moreButton" onclick="fetchDetailData(false)">더보기</button>
+    </div>
+  </div>
+
+    <!-- 다운로드 팝업 -->
+    <div id="downloadModal" class="modal" tabindex="-1" style="display:none; position:fixed; top:30%; left:50%; transform:translateX(-50%); background:white; padding:20px; border:1px solid gray; border-radius:8px; z-index:1050;">
+      <h5>엑셀 다운로드</h5>
+      <label for="downloadDate">날짜 선택 (1일):</label>
+      <input type="date" id="downloadDate" class="form-control mb-3">
+      <div class="text-end">
+        <button class="btn btn-primary me-2" onclick="downloadExcel()">확인</button>
+        <button class="btn btn-secondary" onclick="closeDownloadPopup()">닫기</button>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

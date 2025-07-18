@@ -1,0 +1,38 @@
+package smart.ai.admin.view.admin;
+
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.result.view.Rendering;
+import org.springframework.web.server.ServerWebExchange;
+
+import reactor.core.publisher.Mono;
+import smart.ai.admin.util.Utility;
+
+
+@Controller
+@RequestMapping("/admin")
+public class AdminView {
+    private static final Logger log = LoggerFactory.getLogger(AdminView.class);
+
+    @Autowired
+    Map<String, WebClient> webClients;
+
+    /**
+     * 관리자 - 서비스 관리 화면
+     */
+    @GetMapping("/service")
+    public Mono<Rendering> serviceView(ServerWebExchange exchange, Model model) {
+        Utility.setUserInfo(exchange, model);
+        model.addAttribute("workers", webClients.keySet());
+        return Mono.just(Rendering.view("admin/service").build());
+    }
+    
+}

@@ -1,0 +1,75 @@
+<div th:fragment="serviceAccordion" class="accordion-wrapper">
+    <div class="accordion" th:id="${'accordion-'+item}">
+        <div class="accordion-item">
+            <h1 class="accordion-header" th:id="${'heading-'+item}">
+                <button class="accordion-button custom-button" type="button" data-bs-toggle="collapse"
+                    th:data-bs-target="${'#collapse-'+item}" aria-expanded="true" th:aria-controls="${'collapse-'+item}"
+                    th:text="${item}">
+                </button>
+            </h1>
+            <div th:id="${'collapse-'+item}" class="accordion-collapse collapse show"
+                th:aria-labelledby="${'accordion-'+item}" th:data-bs-parent="${'#accordion-'+item}">
+                <div class="process-wrapper" id="process-wrapper">
+                    <div class="process">
+                        <div class="process-info">
+                            <div th:id="${'status-'+item+'-call'+'-1'}" class="status-circle offline"></div>
+                            call_daemon1
+                        </div>
+                        <div th:id="${item+'-call'+'-1'}">
+                            <button class="btn btn-primary"
+                                th:onclick="startService([[${item}]], 'call', 1)">Start</button>
+                            <button class="btn btn-primary"
+                                th:onclick="stopService([[${item}]], 'call', 1)">Stop</button>
+                        </div>
+                    </div>
+                    <div class="process">
+                        <div class="process-info">
+                            <div th:id="${'status-'+item+'-call'+'-2'}" class="status-circle offline"></div>
+                            call_daemon2
+                        </div>
+                        <div th:id="${item+'-call'+'-2'}">
+                            <div class="thread-control">
+                                Thread :
+                                <input type="text" th:id="${'input-'+item+'-call'+'-2'}" class="text-center"></input>
+                                <button class="btn btn-primary"
+                                    th:onclick="updateService([[${item}]], 'call', 2)">Apply</button>
+                            </div>
+                            <button class="btn btn-primary"
+                                th:onclick="startService([[${item}]], 'call', 2)">Start</button>
+                            <button class="btn btn-primary"
+                                th:onclick="stopService([[${item}]], 'call', 2)">Stop</button>
+                        </div>
+                    </div>
+                    <div class="process">
+                        <div class="process-info">
+                            <div th:id="${'status-'+item+'-tm'+'-1'}" class="status-circle offline"></div>
+                            tm_daemon1
+                        </div>
+                        <div th:id="${item+'-tm'+'-1'}">
+                            <button class="btn btn-primary"
+                                th:onclick="startService([[${item}]], 'tm', 1)">Start</button>
+                            <button class="btn btn-primary" th:onclick="stopService([[${item}]], 'tm', 1)">Stop</button>
+                        </div>
+                    </div>
+                    <div class="process">
+                        <div class="process-info">
+                            <div th:id="${'status-'+item+'-tm'+'-2'}" class="status-circle offline"></div>
+                            tm_daemon2
+                        </div>
+                        <div th:id="${item+'-tm'+'-2'}">
+                            <div class="thread-control">
+                                Thread :
+                                <input type="text" th:id="${'input-'+item+'-tm'+'-2'}" class="text-center"></input>
+                                <button class="btn btn-primary"
+                                    th:onclick="updateService([[${item}]], 'tm', 2)">Apply</button>
+                            </div>
+                            <button class="btn btn-primary"
+                                th:onclick="startService([[${item}]], 'tm', 2)">Start</button>
+                            <button class="btn btn-primary" th:onclick="stopService([[${item}]], 'tm', 2)">Stop</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

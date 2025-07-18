@@ -1,0 +1,11 @@
+<head th:fragment="configFragment">
+    <meta charset="UTF-8">
+    <link rel="icon" th:href="@{/meritz_favicon.ico}">
+    <link rel="stylesheet" th:href="@{/css/root.css}">
+    <title>AI Admin</title>
+    <script th:src="@{/lib/sweetalert2-11.21.2/sweetalert2.all.min.js}"></script>
+    <script th:src="@{/lib/bootstrap-5.3.6-dist/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/common/interceptor.js}"></script>
+    <script th:src="@{/js/common/fetcher.js}"></script>
+    <th:block th:insert="~{common/loading-spinner::loadingSpinner}"></th:block>
+</head>

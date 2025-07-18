@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:insert="~{common/config::configFragment}"></th:block>
+  <script th:src="@{/lib/highcharts-12.2.0/highcharts.js}"></script>
+  <script th:src="@{/js/monitor/daily.js}"></script>
+  <script>
+    Highcharts.setOptions({
+      credits: {enabled: false}
+    });
+  </script>
+</head>
+<body>
+  <th:block th:insert="~{common/loading-spinner::loadingSpinner}"></th:block>
+  <th:block th:insert="~{common/header::headerFragment}"></th:block>
+  <div class="container-fluid mt-4">
+    <main>
+      <h4>실시간 모니터링</h4>
+      <div class="row mb-3 mb-3 align-items-end">
+        <div class="col-auto"><label>집계 방식</label></div>
+        <div class="col-auto">
+          <select id="aggType" class="form-select">
+            <option value="max">최대</option>
+            <option value="avg">평균</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div id="flagsT-chart" style="height: 350px; width: 100%;"></div>
+          </div>
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div id="flagST-chart" style="height: 350px; width: 100%;"></div>
+          </div>
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div id="flagET-chart" style="height: 350px; width: 100%;"></div>
+          </div>
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div id="flagsC-chart" style="height: 350px; width: 100%;"></div>
+          </div>
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div id="flagSC-chart" style="height: 350px; width: 100%;"></div>
+          </div>
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div id="flagEC-chart" style="height: 350px; width: 100%;"></div>
+          </div>
+        </div>
+      </div>
+      
+      
+      ​
+
+    </main>
+  </div>
+</body>
+</html>

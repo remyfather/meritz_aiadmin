@@ -1,0 +1,47 @@
+package smart.ai.admin.controller.auth;
+
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
+
+import reactor.core.publisher.Mono;
+import smart.ai.admin.service.auth.AuthService;
+
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+    @Autowired
+    AuthService authService;
+
+    @PostMapping("/login")
+    public Mono<ResponseEntity<Void>> login(ServerWebExchange exchange, @RequestBody Map<String, Object> req) {
+        String id = String.valueOf(req.get("id"));
+        String pw = String.valueOf(req.get("pw"));
+
+        if ("null".equals(id) || "null".equals(pw)) {
+            return Mono.error(new IllegalArgumentException("invalid arguments"));
+        }
+
+        return authService.loginService(exchange, id, pw);
+    }
+    
+    @PostMapping("/logout")
+    public Mono<ResponseEntity<Void>> logout(ServerWebExchange exchange) {
+        return authService.logoutService(exchange);
+    }
+
+    @PostMapping("/refresh")
+    public Mono<ResponseEntity<Void>> refreshToken(ServerWebExchange exchange) {
+        return authService.refreshService(exchange);
+    }
+
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:insert="~{common/config::configFragment}"></th:block>
+  <script th:src="@{/lib/highcharts-12.2.0/highcharts.js}"></script>
+  <script th:src="@{/js/monitor/period.js}"></script>
+  <script>
+    Highcharts.setOptions({
+      credits: {enabled: false}
+    });
+  </script>
+</head>
+<body>
+  <th:block th:insert="~{common/loading-spinner::loadingSpinner}"></th:block>
+  <th:block th:insert="~{common/header::headerFragment}"></th:block>
+  <div class="container-fluid mt-4">
+    <h4>기간별 모니터링</h4>
+    <main>
+      <div class="row mb-3 mb-3 align-items-end">
+        <div class="col-auto">
+          <label>시작</label>
+        </div>
+        <div class="col-auto">
+          <input id="startDate" class="form-control" type="date">
+        </div>
+        <div class="col-auto">
+          <label>종료</label>
+        </div>
+        <div class="col-auto">
+          <input id="endDate" class="form-control" type="date">
+        </div>
+        <div class="col-auto"><label>집계 방식</label></div>
+        <div class="col-auto">
+          <select id="aggType" class="form-select">
+            <option value="max">최대</option>
+            <option value="avg">평균</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary" onclick="loadPeriodData()">조회</button>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-secondary" onclick="resetToInitial()">초기화</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4"><div id="flag-s-chart" style="height: 300px;"></div></div>
+        <div class="col-md-4"><div id="flag-S-chart" style="height: 300px;"></div></div>
+        <div class="col-md-4"><div id="error-chart" style="height: 300px;"></div></div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
