@@ -194,7 +194,7 @@ public class AdminControllerV2 {
      */
     @PutMapping("/menus/{id}")
     public ResponseEntity<MenuDto> updateMenu(@PathVariable Long id, @RequestBody MenuDto menuDto) {
-        return ResponseEntity.ok(adminService.updateMenu(menuDto));
+        return ResponseEntity.ok(adminService.updateMenu(id, menuDto));
     }
 
     /**

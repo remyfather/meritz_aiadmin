@@ -4,11 +4,12 @@
     <script th:src="@{/js/common/header.js}"></script>
     <script th:inline="javascript">
         // 클라이언트 사이드에서 사용자 정보 확인
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             const userName = user.name || user.username || '';
+            const accessToken = localStorage.getItem('accessToken');
             
-            if (!userName || !localStorage.getItem('accessToken')) {
+            if (!userName || !accessToken) {
                 console.log('사용자 정보 없음, 로그인 페이지로 이동');
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
@@ -17,21 +18,45 @@
                 return;
             }
             
-            // 사용자명 표시
-            const userNameElement = document.querySelector('.user-info span');
-            if (userNameElement) {
-                userNameElement.textContent = userName;
-            }
-            
-            // 역할에 따른 메뉴 표시/숨김
-            const userRole = user.role || '';
-            const adminMenu = document.querySelector('.nav-item.dropdown[th\\:if*="userRole"]');
-            if (adminMenu) {
-                if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
-                    adminMenu.style.display = 'block';
-                } else {
-                    adminMenu.style.display = 'none';
+            // 토큰 유효성 검증
+            try {
+                const response = await fetch('/api/v2/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('토큰이 유효하지 않음, 로그인 페이지로 이동');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                    return;
                 }
+                
+                // 사용자명 표시
+                const userNameElement = document.querySelector('.user-info span');
+                if (userNameElement) {
+                    userNameElement.textContent = userName;
+                }
+                
+                // 역할에 따른 메뉴 표시/숨김
+                const userRole = user.role || '';
+                const adminMenu = document.querySelector('.nav-item.dropdown[th\\:if*="userRole"]');
+                if (adminMenu) {
+                    if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
+                        adminMenu.style.display = 'block';
+                    } else {
+                        adminMenu.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('토큰 검증 실패:', error);
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
             }
         });
     </script>
@@ -71,11 +96,11 @@
                             관리자
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink2">
-                            <li><a class="dropdown-item" th:href="@{/admin/users}">
+                            <li><a class="dropdown-item" href="/admin/users" onclick="navigateToAdminPage('/admin/users')">
                                 <i class="bi bi-people me-2"></i>User Management
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" th:href="@{/admin/service}">
+                            <li><a class="dropdown-item" href="/admin/service" onclick="navigateToAdminPage('/admin/service')">
                                 <i class="bi bi-gear me-2"></i>서비스 설정
                             </a></li>
                         </ul>

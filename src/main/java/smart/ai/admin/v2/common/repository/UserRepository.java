@@ -20,6 +20,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     boolean existsByEmail(String email);
     
+    boolean existsByEmployeeId(String employeeId);
+    
     List<User> findByEnabled(boolean enabled);
     
     @Query("SELECT u FROM User u JOIN u.role r WHERE r.name = :roleName")

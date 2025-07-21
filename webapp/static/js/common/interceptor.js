@@ -87,6 +87,17 @@
                 return Promise.reject(response);
             }
             case 401: {
+                // 삭제된 사용자인지 확인
+                const userDeleted = response.headers.get('X-User-Deleted');
+                if (userDeleted === 'true') {
+                    console.log('User account has been deleted, logging out...');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                    return Promise.reject(response);
+                }
+                
                 // 토큰 갱신 시도
                 const refreshToken = localStorage.getItem('refreshToken');
                 if (refreshToken) {

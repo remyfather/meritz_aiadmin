@@ -34,6 +34,16 @@ public class SuperAdminRequest {
     @Size(max = 100, message = "이메일은 100자 이하여야 합니다")
     private String email;
     
+    @NotBlank(message = "사번은 필수입니다")
+    @Size(max = 20, message = "사번은 20자 이하여야 합니다")
+    private String employeeId;
+    
+    @Pattern(regexp = "^[0-9]{8}$", message = "생년월일은 YYYYMMDD 형식이어야 합니다")
+    private String birthDate;
+    
+    @Size(max = 100, message = "소속팀은 100자 이하여야 합니다")
+    private String department;
+    
     @Pattern(regexp = "^01[0-9]-[0-9]{4}-[0-9]{4}$", message = "올바른 전화번호 형식이 아닙니다 (예: 010-1234-5678)")
     @Size(max = 20, message = "전화번호는 20자 이하여야 합니다")
     private String phone;

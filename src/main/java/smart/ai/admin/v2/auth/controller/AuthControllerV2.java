@@ -49,29 +49,25 @@ public class AuthControllerV2 {
         String username = String.valueOf(request.get("username"));
         String password = String.valueOf(request.get("password"));
         
-        log.info("=== 로그인 API 호출 시작 ===");
-        log.info("로그인 시도: 사용자명={}", username);
-        log.info("요청 데이터: {}", request);
+        log.info("[LOGIN] API 호출 시작 - 사용자명: {}", username);
+        log.debug("[LOGIN] 요청 데이터: {}", request);
         
         if ("null".equals(username) || "null".equals(password)) {
-            log.warn("로그인 실패: 사용자명 또는 비밀번호 누락 - 사용자명={}", username);
-            log.info("=== 로그인 API 호출 실패 - HTTP 400 ===");
+            log.warn("[LOGIN] 실패 - 사용자명 또는 비밀번호 누락 - 사용자명: {}", username);
             return Mono.just(ResponseEntity.badRequest().body(Map.of("error", "Username and password are required")));
         }
         
         return authServiceV2.login(exchange, username, password)
                 .doOnSuccess(response -> {
-                    log.info("로그인 API 응답 상태: {}", response.getStatusCode());
-                    log.info("로그인 API 응답 데이터: {}", response.getBody());
                     if (response.getStatusCode().is2xxSuccessful()) {
-                        log.info("=== 로그인 API 호출 성공 - HTTP {} ===", response.getStatusCodeValue());
+                        log.info("[LOGIN] 성공 - HTTP {} - 사용자명: {}", response.getStatusCodeValue(), username);
                     } else {
-                        log.warn("=== 로그인 API 호출 실패 - HTTP {} ===", response.getStatusCodeValue());
+                        log.warn("[LOGIN] 실패 - HTTP {} - 사용자명: {} - 응답: {}", 
+                                response.getStatusCodeValue(), username, response.getBody());
                     }
                 })
                 .doOnError(error -> {
-                    log.error("로그인 API 호출 중 오류 발생: {}", error.getMessage());
-                    log.info("=== 로그인 API 호출 실패 - 예외 발생 ===");
+                    log.error("[LOGIN] 예외 발생 - 사용자명: {} - 오류: {}", username, error.getMessage());
                 });
     }
     
@@ -135,7 +131,28 @@ public class AuthControllerV2 {
      */
     @GetMapping("/me")
     public Mono<ResponseEntity<Map<String, Object>>> getCurrentUser(ServerWebExchange exchange) {
-        // 현재 사용자 정보 반환 (JWT 토큰에서 추출)
-        return Mono.just(ResponseEntity.ok(Map.of("message", "Current user info")));
+        log.info("=== 현재 사용자 정보 조회 API 호출 시작 ===");
+        
+        // JWT 필터에서 설정한 사용자 정보 가져오기
+        String username = exchange.getAttribute("username");
+        Long userId = exchange.getAttribute("userId");
+        
+        if (username == null || userId == null) {
+            log.warn("사용자 정보 없음 - 토큰에서 추출 실패");
+            log.info("=== 현재 사용자 정보 조회 API 호출 실패 - HTTP 401 ===");
+            return Mono.just(ResponseEntity.status(401).body(Map.of("error", "User information not found")));
+        }
+        
+        log.info("현재 사용자 정보 조회: 사용자={}, ID={}", username, userId);
+        log.info("=== 현재 사용자 정보 조회 API 호출 성공 - HTTP 200 ===");
+        
+        return Mono.just(ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Current user info retrieved successfully",
+            "user", Map.of(
+                "id", userId,
+                "username", username
+            )
+        )));
     }
 } 

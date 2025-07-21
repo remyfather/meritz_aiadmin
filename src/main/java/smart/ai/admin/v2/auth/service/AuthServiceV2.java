@@ -27,16 +27,14 @@ public class AuthServiceV2 {
     
     public Mono<ResponseEntity<Map<String, Object>>> login(ServerWebExchange exchange, String username, String password) {
         return Mono.fromCallable(() -> {
-            log.info("=== 로그인 트랜잭션 시작 ===");
-            log.info("로그인 시도: 사용자명={}", username);
+            log.info("[AUTH] 로그인 시도 - 사용자명: {}", username);
             
             // 사용자 조회
             User user = userRepository.findByUsername(username)
                     .orElse(null);
             
             if (user == null) {
-                log.warn("로그인 실패: 사용자를 찾을 수 없음 - {}", username);
-                log.info("=== 로그인 트랜잭션 실패 (사용자 없음) ===");
+                log.warn("[AUTH] 사용자 없음 - 사용자명: {}", username);
                 return ResponseEntity.status(401).body(Map.of(
                     "success", false,
                     "error", "사용자를 찾을 수 없습니다",
@@ -46,8 +44,7 @@ public class AuthServiceV2 {
             
             // 비밀번호 검증
             if (!user.checkPassword(password)) {
-                log.warn("로그인 실패: 잘못된 비밀번호 - {}", username);
-                log.info("=== 로그인 트랜잭션 실패 (비밀번호 오류) ===");
+                log.warn("[AUTH] 잘못된 비밀번호 - 사용자명: {}", username);
                 return ResponseEntity.status(401).body(Map.of(
                     "success", false,
                     "error", "비밀번호가 올바르지 않습니다",
@@ -57,8 +54,7 @@ public class AuthServiceV2 {
             
             // 계정 상태 확인
             if (!user.isEnabled()) {
-                log.warn("로그인 실패: 비활성 계정 - {}", username);
-                log.info("=== 로그인 트랜잭션 실패 (비활성 계정) ===");
+                log.warn("[AUTH] 비활성 계정 - 사용자명: {}", username);
                 return ResponseEntity.status(401).body(Map.of(
                     "success", false,
                     "error", "비활성화된 계정입니다. 관리자에게 문의하세요",
@@ -74,8 +70,7 @@ public class AuthServiceV2 {
             user.setLastLoginAt(LocalDateTime.now());
             userRepository.save(user);
             
-            log.info("로그인 성공: 사용자={}, 역할={}", username, user.getRole().getName());
-            log.info("=== 로그인 트랜잭션 성공 ===");
+            log.info("[AUTH] 로그인 성공 - 사용자: {} (역할: {})", username, user.getRole().getName());
             
             Map<String, Object> result = new HashMap<>();
             result.put("success", true);

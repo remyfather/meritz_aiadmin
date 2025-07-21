@@ -61,8 +61,29 @@ document.addEventListener('DOMContentLoaded', function () {
     //             activeLinkSet = true;
     //         }
     //     }
-    // });
+    //     });
 });
+
+// 관리자 페이지 네비게이션 함수
+function navigateToAdminPage(path) {
+    // 현재 사용자 정보 확인
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userRole = user.role || '';
+    
+    // 관리자 권한 확인
+    if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
+        Swal.fire({
+            title: 'Access Denied',
+            text: 'You do not have permission to access this page.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
+    // 페이지 이동
+    window.location.href = path;
+}
 
 async function logout() {
     Fetcher('/api/v2/auth/logout', {

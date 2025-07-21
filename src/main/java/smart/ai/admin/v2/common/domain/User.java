@@ -75,9 +75,28 @@ public class User {
     private String phone;
     
     /**
+     * 사번 (Employee ID) - 필수 필드
+     */
+    @Column(nullable = false, length = 20, unique = true)
+    private String employeeId;
+    
+    /**
+     * 생년월일 (YYYYMMDD 형식)
+     */
+    @Column(length = 8)
+    private String birthDate;
+    
+    /**
+     * 소속팀
+     */
+    @Column(length = 100)
+    private String department;
+    
+    /**
      * 계정 활성화 상태 (true: 활성, false: 비활성)
      */
     @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
     
     /**
@@ -108,8 +127,8 @@ public class User {
     
     /**
      * 비밀번호 암호화를 위한 BCrypt 인코더
+     * (정적 필드이므로 서비스에서 주입받아 사용)
      */
-    @Autowired
     private static BCryptPasswordEncoder passwordEncoder;
     
     /**
@@ -132,15 +151,12 @@ public class User {
     }
     
     /**
-     * 비밀번호 설정 (자동 암호화)
+     * 비밀번호 설정 (이미 암호화된 비밀번호)
      * 
-     * @param password 평문 비밀번호
+     * @param encodedPassword 암호화된 비밀번호
      */
-    public void setPassword(String password) {
-        if (passwordEncoder == null) {
-            passwordEncoder = new BCryptPasswordEncoder();
-        }
-        this.password = passwordEncoder.encode(password);
+    public void setPassword(String encodedPassword) {
+        this.password = encodedPassword;
     }
     
     /**

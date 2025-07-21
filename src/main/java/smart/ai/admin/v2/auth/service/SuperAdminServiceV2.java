@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -23,6 +24,7 @@ public class SuperAdminServiceV2 {
     
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
     
     @Value("${app.system.key:AI_ADMIN_2024}")
     private String systemKey;
@@ -59,6 +61,14 @@ public class SuperAdminServiceV2 {
                 ));
             }
             
+            if (userRepository.existsByEmployeeId(request.getEmployeeId())) {
+                log.warn("슈퍼 관리자 등록 실패: 사번 중복 - {}", request.getEmployeeId());
+                log.info("=== 슈퍼 관리자 등록 트랜잭션 실패 (사번 중복) ===");
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "이미 사용 중인 사번입니다"
+                ));
+            }
+            
             // 3. SUPER_ADMIN 역할 조회 또는 생성
             Role superAdminRole = roleRepository.findByName("SUPER_ADMIN")
                     .orElseGet(() -> {
@@ -76,13 +86,16 @@ public class SuperAdminServiceV2 {
                     .username(request.getUsername())
                     .name(request.getName())
                     .email(request.getEmail())
+                    .employeeId(request.getEmployeeId())
+                    .birthDate(request.getBirthDate())
+                    .department(request.getDepartment())
                     .phone(request.getPhone())
                     .enabled(true)
                     .role(superAdminRole)
                     .build();
             
             // 비밀번호 암호화
-            superAdmin.setPassword(request.getPassword());
+            superAdmin.setPassword(passwordEncoder.encode(request.getPassword()));
             
             // 5. 사용자 저장
             User savedSuperAdmin = userRepository.save(superAdmin);

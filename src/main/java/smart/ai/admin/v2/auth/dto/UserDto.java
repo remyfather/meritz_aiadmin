@@ -11,6 +11,10 @@ public class UserDto {
     private String name;
     private String username;
     private String email;
+    private String phone;
+    private String employeeId;
+    private String birthDate;
+    private String department;
     private String password;
     private String role;
     private boolean enabled;

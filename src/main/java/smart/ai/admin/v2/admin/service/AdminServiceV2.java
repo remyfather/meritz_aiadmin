@@ -46,6 +46,10 @@ public class AdminServiceV2 {
         user.setName(userDto.getName());
         user.setUsername(userDto.getUsername());
         user.setEmail(userDto.getEmail());
+        user.setPhone(userDto.getPhone());
+        user.setEmployeeId(userDto.getEmployeeId());
+        user.setBirthDate(userDto.getBirthDate());
+        user.setDepartment(userDto.getDepartment());
         
         // 비밀번호 설정 (제공된 경우 사용, 없으면 기본값)
         String password = userDto.getPassword() != null && !userDto.getPassword().trim().isEmpty() 
@@ -69,6 +73,10 @@ public class AdminServiceV2 {
         
         user.setName(userDto.getName());
         user.setEmail(userDto.getEmail());
+        user.setPhone(userDto.getPhone());
+        user.setEmployeeId(userDto.getEmployeeId());
+        user.setBirthDate(userDto.getBirthDate());
+        user.setDepartment(userDto.getDepartment());
         user.setEnabled(userDto.isEnabled());
         
         // 비밀번호가 제공된 경우 업데이트
@@ -209,6 +217,10 @@ public class AdminServiceV2 {
         dto.setName(user.getName());
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
+        dto.setPhone(user.getPhone());
+        dto.setEmployeeId(user.getEmployeeId());
+        dto.setBirthDate(user.getBirthDate());
+        dto.setDepartment(user.getDepartment());
         dto.setRole(user.getRole().getName());
         dto.setEnabled(user.isEnabled());
         dto.setCreatedAt(user.getCreatedAt());

@@ -18,6 +18,8 @@ INSERT IGNORE INTO menus (name, description, url, icon, sort_order, enabled, typ
 ('역할 관리', '역할 관리', '/admin/roles', 'bi bi-person-badge', 3, 1, 'MENU', NOW(), NOW()),
 ('메뉴 관리', '메뉴 관리', '/admin/menus', 'bi bi-list', 4, 1, 'MENU', NOW(), NOW());
 
+
+
 -- 기존 사용자들의 role_id 업데이트 (기본값으로 USER 역할 할당)
 UPDATE users SET role_id = (SELECT id FROM roles WHERE name = 'USER' LIMIT 1) WHERE role_id IS NULL;
 

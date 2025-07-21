@@ -4,7 +4,7 @@
     <th:block th:insert="~{common/config::configFragment}"></th:block>
     <script th:inline="javascript">
         // 페이지 로드 시 인증 체크
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             const accessToken = localStorage.getItem('accessToken');
             
@@ -14,7 +14,31 @@
                 return;
             }
             
-            console.log('인증된 사용자:', user.username, '역할:', user.role);
+            // 토큰 유효성 검증
+            try {
+                const response = await fetch('/api/v2/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('토큰이 유효하지 않음, 로그인 페이지로 이동');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                console.log('인증된 사용자:', user.username, '역할:', user.role);
+            } catch (error) {
+                console.error('토큰 검증 실패:', error);
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
         });
     </script>
 </head>
@@ -41,7 +65,7 @@
                             <div class="card-body">
                                 <h5 class="card-title">관리자</h5>
                                 <p class="card-text">시스템 설정 및 사용자 관리</p>
-                                <a href="/admin/service" class="btn btn-success">관리자 메뉴</a>
+                                <a href="/admin/users" class="btn btn-success">관리자 메뉴</a>
                             </div>
                         </div>
                     </div>

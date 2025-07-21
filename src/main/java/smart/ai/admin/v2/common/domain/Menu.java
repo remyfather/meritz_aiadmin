@@ -39,9 +39,11 @@ public class Menu {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private MenuType type = MenuType.MENU;
     
     @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,6 +51,7 @@ public class Menu {
     private Menu parent;
     
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Menu> children = new HashSet<>();
     
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -58,6 +61,7 @@ public class Menu {
     private LocalDateTime updatedAt;
     
     @ManyToMany(mappedBy = "menus")
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
     
     @PrePersist

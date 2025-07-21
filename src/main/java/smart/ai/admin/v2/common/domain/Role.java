@@ -30,6 +30,7 @@ public class Role {
     private String description;
     
     @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
     
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -44,6 +45,7 @@ public class Role {
         joinColumns = @JoinColumn(name = "role_id"),
         inverseJoinColumns = @JoinColumn(name = "menu_id")
     )
+    @Builder.Default
     private Set<Menu> menus = new HashSet<>();
     
     // 양방향 관계 제거 - 단방향으로 변경

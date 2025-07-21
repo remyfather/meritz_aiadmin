@@ -85,33 +85,65 @@ function displayUsers() {
         return;
     }
 
-    tableBody.innerHTML = pageUsers.map(user => `
-        <tr>
-            <td>${user.id}</td>
-            <td>${highlightSearch(user.username)}</td>
-            <td>${highlightSearch(user.name)}</td>
-            <td>${highlightSearch(user.email)}</td>
-            <td>
-                <span class="role-badge role-${user.role.toLowerCase().replace('_', '-')}">
-                    ${user.role}
-                </span>
-            </td>
-            <td>
-                <span class="status-badge ${user.enabled ? 'status-active' : 'status-inactive'}">
-                    ${user.enabled ? 'Active' : 'Inactive'}
-                </span>
-            </td>
-            <td>${formatDate(user.createdAt)}</td>
-            <td class="action-buttons">
-                <button class="btn btn-sm btn-outline-primary" onclick="editUser(${user.id})" title="Edit">
-                    <i class="bi bi-pencil"></i>
+    // Get current user info for permission check
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUserRole = currentUser.role || '';
+    const currentUserId = currentUser.id;
+    
+    tableBody.innerHTML = pageUsers.map(user => {
+        // 삭제 버튼 표시 여부 결정
+        let deleteButton = '';
+        
+        // 삭제 권한 확인
+        if (user.role === 'SUPER_ADMIN') {
+            // 슈퍼 관리자는 삭제 버튼을 아예 표시하지 않음
+            deleteButton = '';
+        } else if (currentUserId === user.id) {
+            // 자신은 삭제 불가
+            deleteButton = `
+                <button class="btn btn-sm btn-outline-danger" disabled title="Cannot delete yourself">
+                    <i class="bi bi-trash"></i>
                 </button>
+            `;
+        } else {
+            // 다른 사용자는 삭제 가능
+            deleteButton = `
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id})" title="Delete">
                     <i class="bi bi-trash"></i>
                 </button>
-            </td>
-        </tr>
-    `).join('');
+            `;
+        }
+        
+        return `
+            <tr>
+                <td>${user.id}</td>
+                <td>${highlightSearch(user.username)}</td>
+                <td>${highlightSearch(user.name)}</td>
+                <td>${highlightSearch(user.email)}</td>
+                <td>${user.employeeId || '-'}</td>
+                <td>${user.birthDate || '-'}</td>
+                <td>${user.department || '-'}</td>
+                <td>${user.phone || '-'}</td>
+                <td>
+                    <span class="role-badge role-${user.role.toLowerCase().replace('_', '-')}">
+                        ${user.role}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge ${user.enabled ? 'status-active' : 'status-inactive'}">
+                        ${user.enabled ? 'Active' : 'Inactive'}
+                    </span>
+                </td>
+                <td>${formatDate(user.createdAt)}</td>
+                <td class="action-buttons">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editUser(${user.id})" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    ${deleteButton}
+                </td>
+            </tr>
+        `;
+    }).join('');
 
     updatePagination();
 }
@@ -126,7 +158,9 @@ function filterUsers() {
         const matchesSearch = !searchTerm || 
             user.username.toLowerCase().includes(searchTerm) ||
             user.name.toLowerCase().includes(searchTerm) ||
-            user.email.toLowerCase().includes(searchTerm);
+            user.email.toLowerCase().includes(searchTerm) ||
+            (user.employeeId && user.employeeId.toLowerCase().includes(searchTerm)) ||
+            (user.department && user.department.toLowerCase().includes(searchTerm));
         
         const matchesRole = !roleFilter || user.role === roleFilter;
         const matchesStatus = !statusFilter || user.enabled.toString() === statusFilter;
@@ -227,6 +261,10 @@ async function editUser(userId) {
         document.getElementById('username').value = user.username;
         document.getElementById('email').value = user.email;
         document.getElementById('name').value = user.name;
+        document.getElementById('employeeId').value = user.employeeId || '';
+        document.getElementById('birthDate').value = user.birthDate || '';
+        document.getElementById('department').value = user.department || '';
+        document.getElementById('phone').value = user.phone || '';
         document.getElementById('role').value = user.role;
         document.getElementById('enabled').checked = user.enabled;
         
@@ -266,6 +304,10 @@ async function saveUser() {
         username: document.getElementById('username').value,
         email: document.getElementById('email').value,
         name: document.getElementById('name').value,
+        employeeId: document.getElementById('employeeId').value,
+        birthDate: document.getElementById('birthDate').value,
+        department: document.getElementById('department').value,
+        phone: document.getElementById('phone').value,
         role: document.getElementById('role').value,
         enabled: document.getElementById('enabled').checked
     };
@@ -365,6 +407,25 @@ async function confirmDelete() {
         // Close modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
         modal.hide();
+        
+        // Check if deleted user is current user
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (currentUser.id === userToDelete) {
+            // Current user was deleted, logout
+            Swal.fire({
+                title: 'Account Deleted',
+                text: 'Your account has been deleted. You will be logged out.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                // Clear localStorage and redirect to login
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            });
+            return;
+        }
         
         // Show success message
         Swal.fire({

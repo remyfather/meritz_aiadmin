@@ -7,14 +7,19 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100),
+    name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
+    employee_id VARCHAR(20) NOT NULL UNIQUE,
+    birth_date VARCHAR(8),
+    department VARCHAR(100),
     enabled BOOLEAN DEFAULT TRUE,
+    last_login_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     role_id BIGINT,
     INDEX idx_username (username),
     INDEX idx_email (email),
+    INDEX idx_employee_id (employee_id),
     INDEX idx_role_id (role_id)
 );
 
